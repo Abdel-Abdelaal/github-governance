@@ -1,0 +1,10 @@
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+plan.txt
+*.pem
+.env
+crash.log
+override.tf
+override.tf.json
