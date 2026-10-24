@@ -33,5 +33,5 @@ can use its supported identity constraints.
   It is deliberately disabled during incomplete governance bootstrap.
 - Majors require human review. AI checks never become required checks.
 - Secrets and workflow scanning are immediate, not part of the warning window.
-- Shared workflow major tags are controlled by this account; third-party actions
-  remain SHA-pinned. Online scanning checks the references for known compromises.
+- All remote workflow calls, including our own, are SHA-pinned with version
+  comments. Dependabot delivers reviewed release updates instead of a moving tag. Online scanning checks the references for known compromises.
