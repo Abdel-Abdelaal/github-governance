@@ -1,0 +1,16 @@
+name: AI coding review
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+permissions: {}
+jobs:
+  review:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.id != 49699333
+    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/ai-review.yml@267f601a9fef7576626cee16f190ae9d7198a1f5 # v1.3.0
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      checks: write
+    secrets:
+      AI_API_KEY: ${{ secrets.AI_API_KEY }}
