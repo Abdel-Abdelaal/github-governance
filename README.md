@@ -61,9 +61,18 @@ simultaneous mutations. HCP Terraform provides state locking and history.
 In an emergency the account owner can change GitHub settings directly. Record the
 reason, then reconcile desired state before the next apply. No bypass App is part
 of the ruleset. Solo repos require zero approvals because owners cannot approve
-their own PRs; a team would require 1â€“2 approvals and CODEOWNERS review.
+their own PRs; a team would require 1Ã¢â‚¬â€œ2 approvals and CODEOWNERS review.
 
 ## What this demonstrates
 
 Repository governance as code, self-management, state imports, least-privilege App
 identity, drift detection and auditability through PR history.
+
+## Advisory AI maintenance
+
+Same-repository PRs receive an isolated MiMo 2.6 Flash review; fork and Dependabot
+PRs skip. Findings are non-blocking summaries and neutral notice annotations.
+Weekly audits maintain one health issue. A bounded, tested draft fix PR is possible
+only after the automation App is configured; otherwise that step skips explicitly.
+No AI check is required for merging, and no AI workflow can merge or approve.
+See [the isolation design](https://github.com/Abdel-Abdelaal/platform-workflows/blob/main/docs/ai.md).

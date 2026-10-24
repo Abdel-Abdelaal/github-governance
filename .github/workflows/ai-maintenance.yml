@@ -1,0 +1,28 @@
+name: Weekly AI maintenance
+on:
+  schedule:
+    - cron: '30 5 * * 1'
+  workflow_dispatch:
+permissions: {}
+jobs:
+  audit:
+    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/ai-audit.yml@267f601a9fef7576626cee16f190ae9d7198a1f5 # v1.3.0
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      checks: write
+    secrets:
+      AI_API_KEY: ${{ secrets.AI_API_KEY }}
+  fix:
+    needs: audit
+    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/ai-fix.yml@267f601a9fef7576626cee16f190ae9d7198a1f5 # v1.3.0
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      checks: write
+    secrets:
+      AI_API_KEY: ${{ secrets.AI_API_KEY }}
+      BOT_APP_ID: ${{ secrets.BOT_APP_ID }}
+      BOT_APP_KEY: ${{ secrets.BOT_APP_KEY }}
