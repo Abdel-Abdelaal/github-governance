@@ -1,0 +1,158 @@
+name: Terraform
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: Apply reviewed desired state (main only)
+        type: boolean
+        default: false
+permissions: {}
+concurrency:
+  group: terraform-governance
+  cancel-in-progress: false
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: 1.16.5
+          terraform_wrapper: false
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate
+      - run: python -m unittest discover -s tests -v
+  manage:
+    name: Plan and reconcile
+    needs: validate
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.actor == github.repository_owner)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    env:
+      TF_IN_AUTOMATION: 'true'
+    steps:
+      - uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+      - name: Check owner setup
+        id: setup
+        env:
+          APP_ID: ${{ secrets.GOV_APP_ID }}
+          APP_KEY: ${{ secrets.GOV_APP_KEY }}
+          TF_TOKEN: ${{ secrets.TF_API_TOKEN }}
+        run: |
+          if [ -n "$APP_ID" ] && [ -n "$APP_KEY" ] && [ -n "$TF_TOKEN" ]; then
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+            echo 'Owner setup pending: no plan, apply or drift check was performed.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.setup.outputs.ready == 'true'
+        with:
+          persist-credentials: false
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        if: steps.setup.outputs.ready == 'true'
+        id: app
+        with:
+          app-id: ${{ secrets.GOV_APP_ID }}
+          private-key: ${{ secrets.GOV_APP_KEY }}
+          owner: Abdel-Abdelaal
+          repositories: .github,platform-workflows,shortlink,github-governance
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        if: steps.setup.outputs.ready == 'true'
+        with:
+          terraform_version: 1.16.5
+          terraform_wrapper: false
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+      - name: Plan
+        if: steps.setup.outputs.ready == 'true'
+        id: plan
+        env:
+          GITHUB_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          terraform init -input=false
+          set +e
+          terraform plan -input=false -no-color -detailed-exitcode -out=reviewed.tfplan > plan.txt 2>&1
+          result=$?
+          set -e
+          echo "result=$result" >> "$GITHUB_OUTPUT"
+          cat plan.txt
+          if [ "$result" -eq 1 ]; then exit 1; fi
+      - name: Report plan or drift
+        if: steps.setup.outputs.ready == 'true' && steps.plan.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PLAN_RESULT: ${{ steps.plan.outputs.result }}
+        run: python tools/report_plan.py
+      - name: Apply reviewed plan
+        if: >-
+          steps.setup.outputs.ready == 'true' &&
+          github.ref == 'refs/heads/main' &&
+          (github.event_name == 'push' ||
+           (github.event_name == 'workflow_dispatch' && inputs.apply))
+        env:
+          GITHUB_TOKEN: ${{ steps.app.outputs.token }}
+        run: terraform apply -input=false -auto-approve reviewed.tfplan
+      - name: Report scheduled failure
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          issue=$(gh issue list --state open --search '"Governance workflow failed" in:title' --json number --jq '.[0].number // empty')
+          if [ -n "$issue" ]; then
+            gh issue comment "$issue" --body "Scheduled governance failed: $RUN_URL"
+          else
+            gh issue create --title 'Governance workflow failed' --label governance --body "Scheduled governance failed: $RUN_URL"
+          fi
+  report-validation-failure:
+    name: Report validation failure
+    needs: [validate, manage]
+    if: always() && github.event_name == 'schedule' && needs.validate.result == 'failure'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+      - name: Report failed validation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          issue=$(gh issue list --state open --search '"Governance workflow failed" in:title' --json number --jq '.[0].number // empty')
+          if [ -n "$issue" ]; then
+            gh issue comment "$issue" --body "Scheduled validation failed: $RUN_URL"
+          else
+            gh issue create --title 'Governance workflow failed' --label governance --body "Scheduled validation failed: $RUN_URL"
+          fi

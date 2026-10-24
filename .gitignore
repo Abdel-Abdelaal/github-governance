@@ -8,3 +8,7 @@ plan.txt
 crash.log
 override.tf
 override.tf.json
+
+__pycache__/
+*.pyc
+plan-comment.md
