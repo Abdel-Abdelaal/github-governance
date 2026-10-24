@@ -1,0 +1,7 @@
+# Only our controlled reusable workflow release tags may be symbolic.
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        Abdel-Abdelaal/platform-workflows/*: ref-pin
+        '*': hash-pin
