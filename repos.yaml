@@ -1,0 +1,25 @@
+defaults:
+  visibility: public
+  has_wiki: false
+  has_projects: false
+  allow_squash_merge: true
+  allow_merge_commit: false
+  allow_rebase_merge: false
+  delete_branch_on_merge: true
+  allow_auto_merge: true
+  allow_update_branch: true
+  squash_merge_commit_title: PR_TITLE
+  squash_merge_commit_message: PR_BODY
+  vulnerability_alerts: true
+  secret_scanning: true
+  secret_scanning_push_protection: true
+  required_checks: ["pr-title / Conventional title"]
+repos:
+  .github:
+    description: Engineering handbook and default community files for all my repos
+  platform-workflows:
+    description: Reusable GitHub Actions workflows for my repos
+  shortlink:
+    description: FastAPI URL shortener with enterprise-grade CI/CD, security scanning and AI review
+  github-governance:
+    description: All my GitHub repo settings, rulesets and labels as Terraform
