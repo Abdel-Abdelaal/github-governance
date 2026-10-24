@@ -1,0 +1,26 @@
+name: Security checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+permissions: {}
+jobs:
+  security:
+    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/security.yml@v1
+    permissions:
+      contents: read
+      pull-requests: write
+      security-events: write
+    with:
+      languages: '["python","actions"]'
+  report:
+    needs: security
+    if: failure() && github.event_name == 'schedule'
+    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/report-failure.yml@v1
+    permissions:
+      issues: write
+    with:
+      title: Weekly security checks failed
