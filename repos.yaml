@@ -13,13 +13,48 @@ defaults:
   vulnerability_alerts: true
   secret_scanning: true
   secret_scanning_push_protection: true
-  required_checks: ["pr-title / Conventional title"]
+  required_checks:
+  - pr-title / Conventional title
+  - security / CodeQL (actions)
+  - security / Dependency review
+  - security / Secrets
+  - security / Workflows
 repos:
   .github:
     description: Engineering handbook and default community files for all my repos
   platform-workflows:
     description: Reusable GitHub Actions workflows for my repos
+    required_checks:
+    - pr-title / Conventional title
+    - security / CodeQL (actions)
+    - security / Dependency review
+    - security / Secrets
+    - security / Workflows
+    - ci / Lint
+    - ci / Types
+    - ci / Test
+    - ci / Audit
+    - security / CodeQL (python)
   shortlink:
     description: FastAPI URL shortener with enterprise-grade CI/CD, security scanning and AI review
+    required_checks:
+    - pr-title / Conventional title
+    - security / CodeQL (actions)
+    - security / Dependency review
+    - security / Secrets
+    - security / Workflows
+    - ci / Lint
+    - ci / Types
+    - ci / Test
+    - ci / Audit
+    - security / CodeQL (python)
   github-governance:
     description: All my GitHub repo settings, rulesets and labels as Terraform
+    required_checks:
+    - pr-title / Conventional title
+    - security / CodeQL (actions)
+    - security / Dependency review
+    - security / Secrets
+    - security / Workflows
+    - Validate
+    - security / CodeQL (python)

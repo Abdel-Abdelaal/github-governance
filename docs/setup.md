@@ -8,14 +8,14 @@ Do not paste tokens or private key contents into chat or tracked files.
 1. Sign in at https://app.terraform.io and create the organization `abdel-abdelaal`
    (if unavailable, update versions.tf through a PR to use the actual name).
 2. Create workspace `github-governance`, choose CLI-driven workflow, and set
-   Settings → General → Execution Mode to **Local**. Actions runs Terraform;
+   Settings â†’ General â†’ Execution Mode to **Local**. Actions runs Terraform;
    HCP stores and locks state.
-3. User Settings → Tokens → Create an API token. Set it privately:
+3. User Settings â†’ Tokens â†’ Create an API token. Set it privately:
    `gh secret set TF_API_TOKEN -R Abdel-Abdelaal/github-governance`.
 
 ## 2. Governance GitHub App
 
-GitHub Settings → Developer settings → GitHub Apps → New GitHub App.
+GitHub Settings â†’ Developer settings â†’ GitHub Apps â†’ New GitHub App.
 Use a unique name based on `abdel-governance-bot`, disable webhooks, and restrict
 installation to this account. Install on the four showcase repos only.
 
@@ -37,7 +37,12 @@ opens bot PRs that trigger normal CI, without granting administration permission
 
 ## 4. Bootstrap and verify
 
-Run Terraform workflow manually on main. Inspect the first plan before applying:
+If the reviewed one-time local bootstrap was used, first migrate its verified
+private state to HCP with Terraform's supported state migration flow. Retire the
+local backend after migration; do not run independent local and hosted applies.
+The staging state lives under D:/showcase/.state and is never committed.
+
+Run Terraform workflow manually on main. Inspect the first hosted plan before applying:
 imports must adopt all four repositories, their protect-main rulesets and labels;
 no repository deletion or replacement is acceptable. Then run a second plan and
 require exit code 0. Do not claim governance active before this succeeds.
@@ -49,7 +54,7 @@ declared setting and confirm the next plan closes the issue. Record links in REA
 ## Later services
 
 - SonarQube Cloud: GitHub sign-in, import shortlink, disable Automatic Analysis,
-  create a token in My Account → Security, and set SONAR_TOKEN on shortlink.
+  create a token in My Account â†’ Security, and set SONAR_TOKEN on shortlink.
   Read the actual organization and project key from its UI before configuring CI.
 - Deployment: owner chooses the target. Container build and smoke-test code can
   be prepared first; no hosting subscription or live deploy is implied.
