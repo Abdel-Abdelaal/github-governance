@@ -6,8 +6,10 @@ The engineering handbook lives in [the shared .github repo](https://github.com/A
 ## Status
 
 Bootstrap repository protection is active. Terraform code and validation can run
-without privileged credentials. **State import, apply and drift detection require
-the owner setup in [docs/setup.md](docs/setup.md)** and are not active until verified.
+without privileged credentials. **Unattended state/apply/drift automation requires
+the owner setup in [docs/setup.md](docs/setup.md)** and is not active until verified. A reviewed, one-time local bootstrap can adopt
+the existing resources and activate required checks before that account setup; see
+[ADR 0003](docs/decisions/0003-bootstrap-required-checks.md).
 Do not interpret a skipped credentials step as a successful plan or apply.
 
 ## How it works
@@ -59,7 +61,7 @@ simultaneous mutations. HCP Terraform provides state locking and history.
 In an emergency the account owner can change GitHub settings directly. Record the
 reason, then reconcile desired state before the next apply. No bypass App is part
 of the ruleset. Solo repos require zero approvals because owners cannot approve
-their own PRs; a team would require 1–2 approvals and CODEOWNERS review.
+their own PRs; a team would require 1â€“2 approvals and CODEOWNERS review.
 
 ## What this demonstrates
 
