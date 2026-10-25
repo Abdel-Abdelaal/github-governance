@@ -78,6 +78,7 @@ class FleetReportTests(unittest.TestCase):
             {"title": "Drift detected", "html_url": "u"},
             {"title": "a PR", "html_url": "p", "pull_request": {}},
             {"title": "Fleet health", "html_url": "self"},
+            {"title": "Dependency inventory", "html_url": "inventory"},
         ]
         pulls = [{"user": {"login": "dependabot[bot]"}}, {"user": {"login": "someone"}}]
         read = fake_reader(

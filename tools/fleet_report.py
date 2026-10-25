@@ -12,6 +12,9 @@ from typing import Any
 from github_api import OWNER, Unavailable, api_or_unavailable, upsert_issue
 
 ISSUE_TITLE = "Fleet health"
+# Report issues only restate data. Issues with to-dos (access review checkboxes,
+# AI health reports, drift) still count as findings.
+REPORT_TITLES = frozenset({ISSUE_TITLE, "Dependency inventory"})
 SCORECARD_URL = "https://api.scorecard.dev/projects/github.com/{owner}/{repo}"
 FAILED_CONCLUSIONS = {"failure", "timed_out", "startup_failure", "action_required"}
 DEPENDABOT_LOGIN = "dependabot[bot]"
@@ -142,11 +145,11 @@ def collect(
     if "workflow runs" in data:
         health.runs = latest_runs(data["workflow runs"]["workflow_runs"])
     if "governance issues" in data:
-        # The report's own tracking issue is not a finding about the fleet.
+        # Report issues are not findings about the fleet.
         health.governance_issues = [
             {"title": issue["title"], "url": issue["html_url"]}
             for issue in data["governance issues"]
-            if "pull_request" not in issue and issue["title"] != ISSUE_TITLE
+            if "pull_request" not in issue and issue["title"] not in REPORT_TITLES
         ]
     if "pull requests" in data:
         pulls = data["pull requests"]
