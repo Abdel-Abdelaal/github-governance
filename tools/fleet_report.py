@@ -1,7 +1,9 @@
 """Summarise fleet health from public GitHub data into one tracking issue."""
 
 import argparse
+import base64
 import json
+import re
 import urllib.request
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -18,6 +20,37 @@ REPORT_TITLES = frozenset({ISSUE_TITLE, "Dependency inventory"})
 SCORECARD_URL = "https://api.scorecard.dev/projects/github.com/{owner}/{repo}"
 FAILED_CONCLUSIONS = {"failure", "timed_out", "startup_failure", "action_required"}
 DEPENDABOT_LOGIN = "dependabot[bot]"
+ONBOARDING_URL = (
+    f"https://github.com/{OWNER}/.github/blob/main/standards/repo-structure.md"
+    "#starting-a-new-repo"
+)
+PAGE_SIZE = 100
+# The handbook's "Files every repo has", as platform-workflows conformance enforces.
+REQUIRED_FILES = (
+    "README.md",
+    "LICENSE",
+    ".gitattributes",
+    "AGENTS.md",
+    "CLAUDE.md",
+    ".github/CODEOWNERS",
+    ".github/dependabot.yml",
+    "opencode.json",
+)
+# Reusable platform workflows every repo calls, as in the new-repo starter.
+PLATFORM_CALLERS = ("pr-title", "security", "conformance", "ai-review")
+SCORECARD_CALLER = "scorecard"
+FULL_SHA = "[0-9a-f]{40}"
+WORKFLOW_FILE = re.compile(r"\.github/workflows/[^/]+\.ya?ml")
+
+
+class UnreadableOwnerError(Exception):
+    """The owner's repository list could not be read, so unmanaged repos are unknown."""
+
+    def __init__(self, unavailable: Unavailable) -> None:
+        """Name the reason."""
+        super().__init__(
+            f"{OWNER}'s repositories are not readable: {unavailable.reason}"
+        )
 
 
 class UnreadableRepositoryError(Exception):
@@ -35,6 +68,8 @@ class RepoHealth:
     name: str
     missing_checks: list[str] = field(default_factory=list)
     extra_checks: list[str] = field(default_factory=list)
+    missing_files: list[str] = field(default_factory=list)
+    missing_callers: list[str] = field(default_factory=list)
     runs: list[dict[str, str]] = field(default_factory=list)
     governance_issues: list[dict[str, str]] = field(default_factory=list)
     open_prs: int = 0
@@ -60,6 +95,8 @@ class RepoHealth:
         return bool(
             self.missing_checks
             or self.extra_checks
+            or self.missing_files
+            or self.missing_callers
             or self.failed_runs
             or self.governance_issues
         )
@@ -100,6 +137,83 @@ def latest_runs(runs: list[dict[str, Any]]) -> list[dict[str, str]]:
     return sorted(latest.values(), key=lambda run: run["name"])
 
 
+def caller_pattern(repo: str, caller: str) -> re.Pattern[str]:
+    """Match a `uses:` line that calls a required workflow, pinned by full SHA.
+
+    platform-workflows calls its own reusable workflows by local path instead.
+    """
+    if caller == SCORECARD_CALLER:
+        target = f"ossf/scorecard-action@{FULL_SHA}"
+    else:
+        workflow = rf"\.github/workflows/{re.escape(caller)}\.yml"
+        target = f"{OWNER}/platform-workflows/{workflow}@{FULL_SHA}"
+        if repo == "platform-workflows":
+            target = rf"(?:{target}|\./{workflow})"
+    return re.compile(rf"^\s*(?:-\s*)?uses:\s*['\"]?{target}\b", re.MULTILINE)
+
+
+def missing_callers(repo: str, workflows: list[str]) -> list[str]:
+    """Required callers that no workflow file contains."""
+    text = "\n".join(workflows)
+    return [
+        caller
+        for caller in (*PLATFORM_CALLERS, SCORECARD_CALLER)
+        if not caller_pattern(repo, caller).search(text)
+    ]
+
+
+def workflow_paths(tree: dict[str, Any]) -> list[str]:
+    """Workflow files directly under `.github/workflows/`."""
+    return sorted(
+        item["path"]
+        for item in tree["tree"]
+        if item["type"] == "blob" and WORKFLOW_FILE.fullmatch(item["path"])
+    )
+
+
+def owned_public_repos(
+    read: Callable[[str], Any] = api_or_unavailable,
+) -> list[dict[str, Any]]:
+    """List the owner's public repositories that could join the fleet.
+
+    Forks and archived repositories are not expected to be managed.
+    """
+    repos: list[dict[str, Any]] = []
+    page = 1
+    while True:
+        batch = read(f"users/{OWNER}/repos?type=owner&per_page={PAGE_SIZE}&page={page}")
+        if isinstance(batch, Unavailable):
+            raise UnreadableOwnerError(batch)
+        repos += batch
+        if len(batch) < PAGE_SIZE:
+            break
+        page += 1
+    return sorted(
+        (
+            repo
+            for repo in repos
+            if not repo["private"] and not repo["fork"] and not repo["archived"]
+        ),
+        key=lambda repo: repo["name"],
+    )
+
+
+def unmanaged_repos(
+    owned: list[dict[str, Any]], managed: set[str]
+) -> list[dict[str, str]]:
+    """Public repositories that `repos.yaml` does not declare."""
+    return [
+        {
+            "name": repo["name"],
+            "url": repo["html_url"],
+            "created": repo["created_at"][:10],
+            "content": "empty" if repo["size"] == 0 else "has content",
+        }
+        for repo in owned
+        if repo["name"] not in managed
+    ]
+
+
 def fetch_scorecard(repo: str) -> str:
     """Return the public OpenSSF Scorecard score and date, or 'unavailable'."""
     url = SCORECARD_URL.format(owner=OWNER, repo=repo)
@@ -109,6 +223,22 @@ def fetch_scorecard(repo: str) -> str:
     except (OSError, ValueError):
         return "unavailable"
     return f"{result['score']} ({result['date'][:10]})"
+
+
+def check_files(
+    health: RepoHealth, tree: dict[str, Any], read: Callable[[str], Any], ref: str
+) -> None:
+    """Record missing required files and platform-workflows callers."""
+    paths = {item["path"] for item in tree["tree"]}
+    health.missing_files = [path for path in REQUIRED_FILES if path not in paths]
+    workflows = []
+    for path in workflow_paths(tree):
+        response = read(f"repos/{OWNER}/{health.name}/contents/{path}?ref={ref}")
+        if isinstance(response, Unavailable):
+            health.unreadable.append("workflows")
+            return
+        workflows.append(base64.b64decode(response["content"]).decode("utf-8"))
+    health.missing_callers = missing_callers(health.name, workflows)
 
 
 def collect(
@@ -126,6 +256,7 @@ def collect(
     branch = info["default_branch"]
     sections = {
         "required checks": f"{base}/rules/branches/{branch}",
+        "files": f"{base}/git/trees/{branch}?recursive=1",
         "workflow runs": f"{base}/actions/runs?branch={branch}&per_page=100"
         "&exclude_pull_requests=true",
         "governance issues": f"{base}/issues?labels=governance&state=open&per_page=100",
@@ -142,6 +273,8 @@ def collect(
         live = live_checks(data["required checks"])
         health.missing_checks = sorted(set(desired) - set(live))
         health.extra_checks = sorted(set(live) - set(desired))
+    if "files" in data:
+        check_files(health, data["files"], read, branch)
     if "workflow runs" in data:
         health.runs = latest_runs(data["workflow runs"]["workflow_runs"])
     if "governance issues" in data:
@@ -165,17 +298,52 @@ def cell(health: RepoHealth, section: str, value: object) -> str:
     return "unreadable" if section in health.unreadable else str(value)
 
 
-def render(healths: list[RepoHealth], generated_at: datetime) -> str:
+def files_cell(health: RepoHealth) -> str:
+    """Summarise required files and callers, when both were read."""
+    if {"files", "workflows"} & set(health.unreadable):
+        return "unreadable"
+    if not health.missing_files and not health.missing_callers:
+        return "complete"
+    files, callers = len(health.missing_files), len(health.missing_callers)
+    return (
+        f"missing {files} file{'' if files == 1 else 's'}, "
+        f"{callers} caller{'' if callers == 1 else 's'}"
+    )
+
+
+def unmanaged_lines(repo: dict[str, str]) -> list[str]:
+    """Explain one unmanaged repository and how to onboard it."""
+    return [
+        "",
+        f"## {repo['name']}",
+        f"- Unmanaged: [{repo['name']}]({repo['url']}) is public "
+        f"({repo['content']}, created {repo['created']}) but not in `repos.yaml`, "
+        "so nothing governs its settings, rulesets or labels.",
+        f"- Onboard it with the [new-repo starter]({ONBOARDING_URL}), "
+        "then add it to `repos.yaml` by PR.",
+    ]
+
+
+def render(
+    healths: list[RepoHealth],
+    generated_at: datetime,
+    unmanaged: list[dict[str, str]] | None = None,
+) -> str:
     """Render the tracking issue body."""
+    unmanaged = unmanaged or []
     lines = [
         "<!-- fleet-health -->",
         f"Generated {generated_at:%Y-%m-%d %H:%M} UTC by the Fleet health workflow "
         "from public GitHub data. Admin-only data (secrets, alerts, installations) "
         "is in the monthly access review.",
         "",
-        "| Repo | Status | Required checks vs desired | Failed latest runs "
-        "| Governance issues | Open PRs (Dependabot) | Scorecard |",
-        "|---|---|---|---|---|---|---|",
+        f"{len(healths) + len(unmanaged)} public repositories: {len(healths)} "
+        f"managed in `repos.yaml`, {len(unmanaged)} unmanaged.",
+        "",
+        "| Repo | Status | Required checks vs desired | Required files and callers "
+        "| Failed latest runs | Governance issues | Open PRs (Dependabot) "
+        "| Scorecard |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for health in healths:
         drift = "match"
@@ -189,12 +357,20 @@ def render(healths: list[RepoHealth], generated_at: datetime) -> str:
             health.name,
             health.status,
             cell(health, "required checks", drift),
+            files_cell(health),
             cell(health, "workflow runs", len(health.failed_runs)),
             cell(health, "governance issues", len(health.governance_issues)),
             cell(health, "pull requests", pulls),
             health.scorecard,
         ]
         lines.append("| " + " | ".join(cells) + " |")
+    lines += [
+        f"| {repo['name']} | unmanaged | not in `repos.yaml` | not checked "
+        "| not checked | not checked | not checked | not checked |"
+        for repo in unmanaged
+    ]
+    for repo in unmanaged:
+        lines += unmanaged_lines(repo)
     for health in healths:
         if health.status == "ok":
             continue
@@ -209,6 +385,13 @@ def render(healths: list[RepoHealth], generated_at: datetime) -> str:
         lines += [
             f"- Live check not declared: `{check}`" for check in health.extra_checks
         ]
+        lines += [f"- Required file missing: `{path}`" for path in health.missing_files]
+        lines += [
+            "- No `ossf/scorecard-action` step pinned by full SHA"
+            if caller == SCORECARD_CALLER
+            else f"- No `{caller}.yml` platform-workflows caller pinned by full SHA"
+            for caller in health.missing_callers
+        ]
         lines += [
             f"- Latest `{run['name']}` ({run['event']}) is **{run['conclusion']}**: "
             f"{run['url']}"
@@ -221,7 +404,9 @@ def render(healths: list[RepoHealth], generated_at: datetime) -> str:
     lines += [
         "",
         "Desired checks come from `repos.yaml`. A check listed as not applied "
-        "is desired state waiting for a Terraform apply, not a bypass.",
+        "is desired state waiting for a Terraform apply, not a bypass. Required "
+        "files and callers follow the handbook's repo structure standard. Forks "
+        "and archived repositories are not expected to be managed.",
     ]
     return "\n".join(lines) + "\n"
 
@@ -243,8 +428,9 @@ def main() -> None:
         healths = [
             collect(repo, checks) for repo, checks in desired_checks(spec).items()
         ]
+        unmanaged = unmanaged_repos(owned_public_repos(), set(spec["repos"]))
         arguments.output.write_text(
-            render(healths, datetime.now(UTC)), encoding="utf-8"
+            render(healths, datetime.now(UTC), unmanaged), encoding="utf-8"
         )
     else:
         upsert_issue(ISSUE_TITLE, arguments.body.read_text(encoding="utf-8"))

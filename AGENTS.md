@@ -22,4 +22,5 @@ AI can open PRs but cannot merge or apply infrastructure.
 |---|---|
 | desired state | settings declared in repos.yaml and Terraform |
 | drift | a difference between desired state and GitHub settings |
-| fleet | the four explicitly managed showcase repositories |
+| fleet | the repositories declared in repos.yaml |
+| unmanaged | a public, non-fork, non-archived repository missing from repos.yaml; Fleet health lists it |
