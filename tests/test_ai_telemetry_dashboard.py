@@ -109,6 +109,21 @@ class MetricsTests(unittest.TestCase):
         self.assertIsNone(row["mean_run_seconds"])
         self.assertEqual(row["usage_totals"], {})
 
+    def test_missing_attempt_evidence_cannot_lower_measured_latency(self):
+        missing = record("missing", "no_valid_output", False)
+        missing["attempts"] = []
+        missing["evidence_gap"] = True
+        row = dashboard.metrics([{"record": record()}, {"record": missing}])[0]
+        self.assertEqual(row["attempted_runs"], 2)
+        self.assertEqual(row["success_rate"], 0.5)
+        self.assertEqual(row["runs_with_attempts"], 1)
+        self.assertEqual(row["runs_without_attempt_evidence"], 1)
+        self.assertEqual(row["mean_run_seconds"], 6)
+        self.assertEqual(row["attempts_per_run"], 2)
+        unknown = dashboard.metrics([{"record": missing}])[0]
+        self.assertIsNone(unknown["mean_run_seconds"])
+        self.assertIsNone(unknown["attempts_per_run"])
+
     def test_partial_publication_and_evidence_gaps_remain_visible(self):
         """A posted summary counts even if a later check API call failed."""
         value = record()

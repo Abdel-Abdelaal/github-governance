@@ -139,8 +139,9 @@ def metrics(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for (repo, mode), records in sorted(grouped.items()):
         attempted = [r for r in records if r["status"] != "skipped"]
+        timed = [r for r in attempted if r["attempts"]]
         valid = sum(r["status"] == "valid" for r in attempted)
-        attempts = [a for r in records for a in r["attempts"]]
+        attempts = [a for r in timed for a in r["attempts"]]
         failures: Counter[str] = Counter()
         for attempt in attempts:
             if attempt["exit_category"] != "ok":
@@ -163,12 +164,12 @@ def metrics(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "valid_runs": valid,
                 "success_rate": valid / len(attempted) if attempted else None,
                 "skipped": len(records) - len(attempted),
-                "attempts_per_run": len(attempts) / len(attempted)
-                if attempted
-                else None,
+                "runs_with_attempts": len(timed),
+                "runs_without_attempt_evidence": len(attempted) - len(timed),
+                "attempts_per_run": len(attempts) / len(timed) if timed else None,
                 "mean_run_seconds": sum(a["duration_seconds"] for a in attempts)
-                / len(attempted)
-                if attempted
+                / len(timed)
+                if timed
                 else None,
                 "usage_totals": dict(usage),
                 "runs_with_usage": sum(bool(r.get("usage_totals")) for r in attempted),
