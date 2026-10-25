@@ -25,6 +25,20 @@ repos:
     description: Android assistant application with shared security checks and measured AI review
   youtube-knowledge-distillation:
     description: Cited knowledge-distillation research kit with shared security and AI evidence
+  agent-dispatcher:
+    description: Serial, quota-aware dispatcher that turns owner-labelled issues into gated draft PRs using official AI coding CLIs
+    required_checks:
+    - pr-title / Conventional title
+    - security / CodeQL (actions)
+    - security / Dependency review
+    - security / Secrets
+    - security / Workflows
+    - ci / Lint
+    - ci / Types
+    - ci / Test
+    - ci / Audit
+    - security / CodeQL (python)
+    - conformance / Conformance
   .github:
     description: Engineering handbook and default community files for all my repos
   platform-workflows:
