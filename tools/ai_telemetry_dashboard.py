@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import os
 import re
 import subprocess
 import tempfile
@@ -12,6 +13,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import ai_redteam_dashboard
 from github_api import OWNER, api, gh
 
 PREDICATE = f"https://github.com/{OWNER}/platform-workflows/blob/main/docs/ai-telemetry.md#record-v1"
@@ -189,7 +191,9 @@ def metrics(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return rows
 
 
-def build(repositories: list[str], output: Path) -> None:
+def build(
+    repositories: list[str], output: Path, *, include_redteam: bool = False
+) -> None:
     """Create a queryable dataset and metrics from verified records only."""
     entries: list[dict[str, Any]] = []
     errors: list[dict[str, str]] = []
@@ -207,6 +211,33 @@ def build(repositories: list[str], output: Path) -> None:
                     }
                 )
     output.mkdir(parents=True, exist_ok=True)
+    redteam = "not yet collected"
+    if include_redteam:
+        try:
+            redteam = ai_redteam_dashboard.latest()
+        except (
+            OSError,
+            ValueError,
+            TypeError,
+            KeyError,
+            subprocess.CalledProcessError,
+        ):
+            redteam = {
+                "available": False,
+                "reason": "signed red-team evidence unavailable",
+            }
+        if not redteam.get("available"):
+            errors.append(
+                {"repository": "platform-workflows", "reason": redteam["reason"]}
+            )
+        if os.environ.get("REDTEAM_ARCHIVE_RESULT") == "failure":
+            errors.append(
+                {
+                    "repository": "platform-workflows",
+                    "reason": "latest red-team archival failed; "
+                    "retained evidence may be stale",
+                }
+            )
     summary = {
         "schema_version": 1,
         "generated_at": datetime.now(UTC).isoformat(),
@@ -224,7 +255,7 @@ def build(repositories: list[str], output: Path) -> None:
             )
         ],
         "outcomes": "not yet collected",
-        "redteam": "not yet collected",
+        "redteam": redteam,
     }
     (output / "metrics.json").write_text(
         json.dumps(summary, indent=2), encoding="utf-8"
@@ -251,6 +282,7 @@ def main() -> None:
     parser.add_argument("--repos", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--discover-public", action="store_true")
+    parser.add_argument("--include-redteam", action="store_true")
     args = parser.parse_args()
     spec = json.loads(args.repos.read_text(encoding="utf-8"))
     repositories = list(spec["repos"])
@@ -268,7 +300,7 @@ def main() -> None:
                 and re.fullmatch(r"[A-Za-z0-9_.-]+", item["name"])
             }
         )
-    build(repositories, args.output)
+    build(repositories, args.output, include_redteam=args.include_redteam)
 
 
 if __name__ == "__main__":

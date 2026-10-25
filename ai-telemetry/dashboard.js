@@ -77,6 +77,15 @@ async function load() {
       byId("notice").textContent = data.collection_errors.length + " collection/signature errors · " + gaps + " execution evidence gaps · " + missing + " public repositories awaiting signed records. Coverage is incomplete; inspect metrics.json and the collection run.";
     }
     render();
+    const redteam = data.redteam;
+    if (redteam && typeof redteam === "object" && redteam.available) {
+      byId("redteam").textContent = number(redteam.defended) + " / " + number(redteam.attacks) + " attacks defended · " + number(redteam.useful) + " / " + number(redteam.attacks) + " useful responses · " + new Date(redteam.generated_at).toLocaleString("en-GB", {timeZone: "UTC"}) + " UTC";
+      const expected = "https://github.com/Abdel-Abdelaal/github-governance/releases/tag/ai-redteam-";
+      if (typeof redteam.evidence_url === "string" && redteam.evidence_url.startsWith(expected)) {
+        byId("redteam-evidence").href = redteam.evidence_url;
+        byId("redteam-evidence").hidden = false;
+      }
+    }
   } catch {
     byId("updated").textContent = "Metrics could not be loaded.";
     byId("notice").hidden = false;
