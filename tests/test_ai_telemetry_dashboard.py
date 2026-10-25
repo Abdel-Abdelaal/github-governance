@@ -56,8 +56,18 @@ class MetricsTests(unittest.TestCase):
             spec = Path(directory) / "repos.json"
             spec.write_text('{"repos":{"old-public":{}}}')
             with (
-                patch.object(sys, "argv", ["collector", "--repos", str(spec),
-                             "--output", directory, "--discover-public"]),
+                patch.object(
+                    sys,
+                    "argv",
+                    [
+                        "collector",
+                        "--repos",
+                        str(spec),
+                        "--output",
+                        directory,
+                        "--discover-public",
+                    ],
+                ),
                 patch.object(dashboard, "pages", return_value=items) as pages,
                 patch.object(dashboard, "build") as build,
             ):
