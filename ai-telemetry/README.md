@@ -25,8 +25,18 @@ risk. Signature verification detects modification, not deletion or AI correctnes
 Success means validated output divided by attempted runs, excluding credential
 skips. Latency sums all attempts per run. Token counts are sums of reported usage;
 the dashboard shows how many runs supplied usage. Findings count as published only
-when a publisher receipt says so. Outcome quality, red-team rates and non-platform
+when a publisher receipt says so. Outcome quality and non-platform
 AI integrations remain explicitly unavailable until instrumented.
+
+The latest red-team scoreboard is read from the signature-bound custom predicate,
+never the unsigned summary artifact. Collection pins the platform red-team signer,
+main source ref, hosted runner and public signing visibility. The certificate's
+signed invocation URI must match the archived run identity. Its subject and bundle
+are secret-scanned, then appended to this repository's monthly `ai-redteam-YYYY-MM`
+Release so the proof survives source artifact expiry. Collection errors leave a
+visible gap; a failed latest archival can show retained evidence with a warning.
+The score measures the tested attacks and useful responses, not universal security
+or complete OWASP coverage. Review quality outcome joins remain unavailable.
 Partial publication receipts count confirmed summary findings even if a later
 check API call failed. Damaged execution/publisher evidence is counted separately
 and produces a visible coverage warning.
