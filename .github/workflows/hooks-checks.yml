@@ -7,7 +7,7 @@ on:
 permissions: {}
 jobs:
   hooks:
-    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/hooks.yml@e26d5b07bdee2fc54ed5bd607d8041f7fbeaadaf # v1.5.0
+    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/hooks.yml@9963dc1ffc49cff752cc62f2ec9c1651bdb3f482 # v1.6.0
     permissions:
       contents: read
       issues: write
