@@ -57,3 +57,36 @@ import {
   to = module.repo["github-governance"].github_issue_labels.this
   id = "github-governance"
 }
+
+# ello and youtube-knowledge-distillation were enrolled after the bootstrap apply.
+# Their protect-main rulesets were created on 2026-10-25 with the module's exact
+# rules, so a reviewed apply adopts them instead of creating duplicates.
+import {
+  to = module.repo["ello"].github_repository.this
+  id = "ello"
+}
+
+import {
+  to = module.repo["ello"].github_repository_ruleset.main
+  id = "ello:25834725"
+}
+
+import {
+  to = module.repo["ello"].github_issue_labels.this
+  id = "ello"
+}
+
+import {
+  to = module.repo["youtube-knowledge-distillation"].github_repository.this
+  id = "youtube-knowledge-distillation"
+}
+
+import {
+  to = module.repo["youtube-knowledge-distillation"].github_repository_ruleset.main
+  id = "youtube-knowledge-distillation:25834726"
+}
+
+import {
+  to = module.repo["youtube-knowledge-distillation"].github_issue_labels.this
+  id = "youtube-knowledge-distillation"
+}
