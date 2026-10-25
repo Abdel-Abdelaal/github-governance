@@ -107,7 +107,7 @@ These labels are not applied live yet: migrate the existing bootstrap state to
 HCP and configure the governance App before applying. Stale/release maintenance
 explicitly skips mutations until its canonical labels exist.
 
-Maintenance callers now pin platform v1.8.0 (`40e5261e2e39d8d0c88e709c26385cab3cc43466`).
+Maintenance callers now pin platform v1.8.0 (`f06eb74320f169fa6ce3690b0cd44ccfba8f199b`).
 Signed AI evidence and measured runs appear in the
 [public AI observatory](https://abdel-abdelaal.github.io/github-governance/). Frozen hook checks
 run where a hook configuration is supported; native Dependabot maintains baseline
