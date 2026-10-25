@@ -82,3 +82,9 @@ The desired label catalog now includes `stale`, `autorelease: pending` and
 These labels are not applied live yet: migrate the existing bootstrap state to
 HCP and configure the governance App before applying. Stale/release maintenance
 explicitly skips mutations until its canonical labels exist.
+
+Maintenance callers now pin platform v1.5.0 (`e26d5b07bdee2fc54ed5bd607d8041f7fbeaadaf`).
+Its corrected AI runtime awaits consumer audit verification. Frozen hook checks
+run where a hook configuration is supported; native Dependabot maintains baseline
+hook revisions. Stale/release mutations remain explicitly gated on canonical
+labels and maintenance App setup. The Python audit includes development tooling.

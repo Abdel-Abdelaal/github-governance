@@ -6,7 +6,7 @@ on:
 permissions: {}
 jobs:
   audit:
-    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/ai-audit.yml@ee62b8d7843ace6e55aa77cf6b8652da5cb62a83 # v1.4.0
+    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/ai-audit.yml@e26d5b07bdee2fc54ed5bd607d8041f7fbeaadaf # v1.5.0
     permissions:
       contents: read
       issues: write
@@ -16,7 +16,7 @@ jobs:
       AI_API_KEY: ${{ secrets.AI_API_KEY }}
   fix:
     needs: audit
-    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/ai-fix.yml@ee62b8d7843ace6e55aa77cf6b8652da5cb62a83 # v1.4.0
+    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/ai-fix.yml@e26d5b07bdee2fc54ed5bd607d8041f7fbeaadaf # v1.5.0
     permissions:
       contents: read
       issues: write
