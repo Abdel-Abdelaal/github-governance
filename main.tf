@@ -8,7 +8,7 @@ locals {
 
 # A reviewed revision avoids changing Terraform input behind a PR's back.
 data "http" "labels" {
-  url = "https://raw.githubusercontent.com/Abdel-Abdelaal/.github/3f91a23103c44b27c58f493dfd799e6a442c7056/.github/labels.yml"
+  url = "https://raw.githubusercontent.com/Abdel-Abdelaal/.github/10d5be7475075961bc44dae698048b260945c112/.github/labels.yml"
   request_headers = {
     Accept = "text/plain"
   }

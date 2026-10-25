@@ -102,7 +102,7 @@ No AI check is required for merging, and no AI workflow can merge or approve.
 See [the isolation design](https://github.com/Abdel-Abdelaal/platform-workflows/blob/main/docs/ai.md).
 
 The desired label catalog now includes `stale`, `autorelease: pending` and
-`autorelease: tagged`, pinned to reviewed handbook commit `3f91a23103c44b27c58f493dfd799e6a442c7056`.
+`autorelease: tagged` and the five `agent:*` task states of agent-dispatcher, pinned to reviewed handbook commit `10d5be7475075961bc44dae698048b260945c112`.
 These labels are not applied live yet: migrate the existing bootstrap state to
 HCP and configure the governance App before applying. Stale/release maintenance
 explicitly skips mutations until its canonical labels exist.
