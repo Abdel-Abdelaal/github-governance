@@ -45,7 +45,8 @@ class FleetReportTests(unittest.TestCase):
     def test_collect_reports_check_drift_and_failures(self):
         rules = [{"type": "pull_request", "parameters": {}},
                  {"type": "required_status_checks", "parameters": {"required_status_checks": [{"context": "a"}, {"context": "z"}]}}]
-        issues = [{"title": "Drift detected", "html_url": "u"}, {"title": "a PR", "html_url": "p", "pull_request": {}}]
+        issues = [{"title": "Drift detected", "html_url": "u"}, {"title": "a PR", "html_url": "p", "pull_request": {}},
+                  {"title": "Fleet health", "html_url": "self"}]
         pulls = [{"user": {"login": "dependabot[bot]"}}, {"user": {"login": "someone"}}]
         read = fake_reader({
             "repos/Abdel-Abdelaal/one/rules": rules,
