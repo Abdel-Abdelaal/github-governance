@@ -8,14 +8,14 @@ Do not paste tokens or private key contents into chat or tracked files.
 1. Sign in at https://app.terraform.io and create the organization `abdel-abdelaal`
    (if unavailable, update versions.tf through a PR to use the actual name).
 2. Create workspace `github-governance`, choose CLI-driven workflow, and set
-   Settings â†’ General â†’ Execution Mode to **Local**. Actions runs Terraform;
+   Settings → General → Execution Mode to **Local**. Actions runs Terraform;
    HCP stores and locks state.
-3. User Settings â†’ Tokens â†’ Create an API token. Set it privately:
+3. User Settings → Tokens → Create an API token. Set it privately:
    `gh secret set TF_API_TOKEN -R Abdel-Abdelaal/github-governance`.
 
 ## 2. Governance GitHub App
 
-GitHub Settings â†’ Developer settings â†’ GitHub Apps â†’ New GitHub App.
+GitHub Settings → Developer settings → GitHub Apps → New GitHub App.
 Use a unique name based on `abdel-governance-bot`, disable webhooks, and restrict
 installation to this account. Install on the four showcase repos only.
 
@@ -51,10 +51,20 @@ Test drift with a harmless temporary wiki setting change in shortlink, then run
 the plan workflow and check that `Drift detected` opens. Run apply to restore the
 declared setting and confirm the next plan closes the issue. Record links in README.
 
+## What each step unlocks
+
+| Step | Unlocks | Until then |
+|---|---|---|
+| HCP Terraform + governance App | hosted plan on PRs, apply on merge, nightly drift issue, pending desired checks (`conformance / Conformance`, shortlink `Build, smoke and scan`) and new labels applied | Terraform workflow validates only; Fleet health lists the pending checks as "not applied" |
+| Governance App alone | complete monthly access review (secret ages, bypass actors, deploy keys) | those sections show "skipped" |
+| Automation App | baseline sync PRs, release-please release PRs, stale mutations, AI draft fix PRs | each of those steps skips with a notice |
+| SonarQube Cloud | duplication and maintainability quality gate on shortlink | Ruff, Pyright and coverage gates still apply |
+| Hosting choice | public deployment of the already-attested shortlink image | image is published to GHCR, not served |
+
 ## Later services
 
 - SonarQube Cloud: GitHub sign-in, import shortlink, disable Automatic Analysis,
-  create a token in My Account â†’ Security, and set SONAR_TOKEN on shortlink.
+  create a token in My Account → Security, and set SONAR_TOKEN on shortlink.
   Read the actual organization and project key from its UI before configuring CI.
 - Deployment: owner chooses the target. Container build and smoke-test code can
   be prepared first; no hosting subscription or live deploy is implied.
