@@ -1,5 +1,6 @@
 """Test fleet health and access review reports without touching GitHub."""
 
+import base64
 import subprocess
 import sys
 import unittest
@@ -35,6 +36,33 @@ def fake_reader(responses):
         raise AssertionError(f"unexpected path {path}")
 
     return read
+
+
+SHA = "9963dc1ffc49cff752cc62f2ec9c1651bdb3f482"
+FULL_CALLERS = f"""
+jobs:
+  pr-title:
+    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/pr-title.yml@{SHA} # v1.6.0
+  security:
+    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/security.yml@{SHA}
+  conformance:
+    uses: 'Abdel-Abdelaal/platform-workflows/.github/workflows/conformance.yml@{SHA}'
+  review:
+    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/ai-review.yml@{SHA}
+  scorecard:
+    steps:
+      - uses: ossf/scorecard-action@2d1146689b8cda280b9bc96326124645441f03bc # v2.4.4
+"""
+REQUIRED_TREE = [{"path": path, "type": "blob"} for path in fleet_report.REQUIRED_FILES]
+
+
+def tree(*paths):
+    """Return a recursive git tree holding the required files plus `paths`."""
+    return {"tree": REQUIRED_TREE + [{"path": path, "type": "blob"} for path in paths]}
+
+
+def content(text):
+    return {"content": base64.b64encode(text.encode()).decode()}
 
 
 def run(name, conclusion, event="schedule"):
@@ -89,19 +117,27 @@ class FleetReportTests(unittest.TestCase):
                 },
                 "repos/Abdel-Abdelaal/one/issues": issues,
                 "repos/Abdel-Abdelaal/one/pulls": pulls,
+                "repos/Abdel-Abdelaal/one/git/trees/main": tree(
+                    ".github/workflows/ci.yml"
+                ),
+                "repos/Abdel-Abdelaal/one/contents/.github/workflows/ci.yml": content(
+                    FULL_CALLERS
+                ),
                 "repos/Abdel-Abdelaal/one": {"default_branch": "main"},
             }
         )
         health = fleet_report.collect(
             "one", ["a", "b"], read=read, scorecard=lambda _: "6.4 (2026-10-25)"
         )
+        self.assertEqual((health.missing_files, health.missing_callers), ([], []))
         self.assertEqual((health.missing_checks, health.extra_checks), (["b"], ["z"]))
         self.assertEqual(len(health.failed_runs), 1)
         self.assertEqual(len(health.governance_issues), 1)
         self.assertEqual((health.open_prs, health.dependabot_prs), (2, 1))
         body = fleet_report.render([health], NOW)
         self.assertIn(
-            "| one | attention | 1 not applied, 1 undeclared | 1 | 1 | 2 (1) | 6.4 (2026-10-25) |",
+            "| one | attention | 1 not applied, 1 undeclared | complete | 1 | 1 | 2 (1) "
+            "| 6.4 (2026-10-25) |",
             body,
         )
         self.assertIn("Desired check not applied: `b`", body)
@@ -120,12 +156,133 @@ class FleetReportTests(unittest.TestCase):
         self.assertEqual(health.status, "incomplete")
         body = fleet_report.render([health], NOW)
         self.assertIn(
-            "| one | incomplete | unreadable | unreadable | unreadable | unreadable | unavailable |",
+            "| one | incomplete | unreadable | unreadable | unreadable | unreadable "
+            "| unreadable | unavailable |",
             body,
         )
         self.assertIn(
             "Could not read required checks; it is not counted as healthy.", body
         )
+
+    def test_missing_files_and_callers_need_attention(self):
+        partial = tree(".github/workflows/pr.yml", ".github/workflows/sub/x.yml")
+        partial["tree"] = [
+            item for item in partial["tree"] if item["path"] != "AGENTS.md"
+        ]
+        tag_pinned = FULL_CALLERS.replace(f"security.yml@{SHA}", "security.yml@v1")
+        without_scorecard = "\n".join(
+            line for line in tag_pinned.splitlines() if "ossf" not in line
+        )
+        read = fake_reader(
+            {
+                "repos/Abdel-Abdelaal/one/git/trees/main": partial,
+                "repos/Abdel-Abdelaal/one/contents/.github/workflows/pr.yml": content(
+                    without_scorecard
+                ),
+                "repos/Abdel-Abdelaal/one/rules": [],
+                "repos/Abdel-Abdelaal/one/actions": {"workflow_runs": []},
+                "repos/Abdel-Abdelaal/one/issues": [],
+                "repos/Abdel-Abdelaal/one/pulls": [],
+                "repos/Abdel-Abdelaal/one": {"default_branch": "main"},
+            }
+        )
+        health = fleet_report.collect(
+            "one", [], read=read, scorecard=lambda _: "unavailable"
+        )
+        self.assertEqual(health.missing_files, ["AGENTS.md"])
+        self.assertEqual(health.missing_callers, ["security", "scorecard"])
+        self.assertEqual(health.status, "attention")
+        body = fleet_report.render([health], NOW)
+        self.assertIn("| one | attention | match | 1 files, 2 callers missing |", body)
+        self.assertIn("- Required file missing: `AGENTS.md`", body)
+        self.assertIn(
+            "- No `security.yml` platform-workflows caller pinned by full SHA", body
+        )
+        self.assertIn("- No `ossf/scorecard-action` step pinned by full SHA", body)
+
+    def test_platform_workflows_may_call_itself_by_local_path(self):
+        local = FULL_CALLERS.replace(
+            f"Abdel-Abdelaal/platform-workflows/.github/workflows/pr-title.yml@{SHA}",
+            "./.github/workflows/pr-title.yml",
+        )
+        self.assertEqual(
+            fleet_report.missing_callers("platform-workflows", [local]), []
+        )
+        self.assertEqual(fleet_report.missing_callers("other", [local]), ["pr-title"])
+
+    def test_empty_repository_files_are_unreadable_not_complete(self):
+        empty = Unavailable("HTTP 409: the repository is empty")
+        read = fake_reader(
+            {
+                "repos/Abdel-Abdelaal/one/git/trees": empty,
+                "repos/Abdel-Abdelaal/one/rules": [],
+                "repos/Abdel-Abdelaal/one/actions": {"workflow_runs": []},
+                "repos/Abdel-Abdelaal/one/issues": [],
+                "repos/Abdel-Abdelaal/one/pulls": [],
+                "repos/Abdel-Abdelaal/one": {"default_branch": "main"},
+            }
+        )
+        health = fleet_report.collect(
+            "one", [], read=read, scorecard=lambda _: "unavailable"
+        )
+        self.assertEqual(health.status, "incomplete")
+        self.assertIn(
+            "| one | incomplete | match | unreadable |",
+            fleet_report.render([health], NOW),
+        )
+
+    def test_public_repos_missing_from_repos_yaml_are_unmanaged(self):
+        def repo(name, size=10, *, private=False, fork=False, archived=False):
+            return {
+                "name": name,
+                "html_url": f"https://github.com/Abdel-Abdelaal/{name}",
+                "created_at": "2026-10-25T09:00:00Z",
+                "size": size,
+                "private": private,
+                "fork": fork,
+                "archived": archived,
+            }
+
+        first_page = [repo(f"managed-{n}") for n in range(99)] + [repo("ello", 0)]
+        second_page = [
+            repo("one"),
+            repo("secret", private=True),
+            repo("forked", fork=True),
+            repo("old", archived=True),
+        ]
+        pages = []
+
+        def read(path):
+            pages.append(path)
+            return first_page if path.endswith("page=1") else second_page
+
+        owned = fleet_report.owned_public_repos(read=read)
+        self.assertEqual(len(pages), 2)
+        managed = {"one"} | {f"managed-{n}" for n in range(99)}
+        unmanaged = fleet_report.unmanaged_repos(owned, managed)
+        self.assertEqual(
+            unmanaged,
+            [
+                {
+                    "name": "ello",
+                    "url": "https://github.com/Abdel-Abdelaal/ello",
+                    "created": "2026-10-25",
+                    "content": "empty",
+                }
+            ],
+        )
+        body = fleet_report.render([], NOW, unmanaged)
+        self.assertIn(
+            "1 public repositories: 0 managed in `repos.yaml`, 1 unmanaged.", body
+        )
+        self.assertIn("| ello | unmanaged | not in `repos.yaml` |", body)
+        self.assertIn("standards/repo-structure.md#starting-a-new-repo", body)
+
+    def test_unreadable_owner_fails_loudly(self):
+        with self.assertRaises(fleet_report.UnreadableOwnerError):
+            fleet_report.owned_public_repos(
+                read=lambda _: Unavailable("HTTP 403: not readable with this token")
+            )
 
     def test_unreadable_repository_fails_loudly(self):
         read = fake_reader(
@@ -192,6 +349,16 @@ class GitHubApiTests(unittest.TestCase):
         with patch.object(github_api, "gh", side_effect=error):
             self.assertIsInstance(
                 github_api.api_or_unavailable("repos/x/y/keys"), Unavailable
+            )
+
+    def test_empty_repository_becomes_unavailable(self):
+        error = subprocess.CalledProcessError(
+            1, "gh", stderr="gh: Git Repository is empty. (HTTP 409)"
+        )
+        with patch.object(github_api, "gh", side_effect=error):
+            self.assertEqual(
+                github_api.api_or_unavailable("repos/x/y/git/trees/main"),
+                Unavailable("HTTP 409: the repository is empty"),
             )
 
     def test_other_errors_still_fail(self):

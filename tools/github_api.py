@@ -51,6 +51,9 @@ def api_or_unavailable(path: str) -> Any:  # noqa: ANN401 - decoded JSON
         for status in ("401", "403", "404"):
             if f"HTTP {status}" in detail:
                 return Unavailable(f"HTTP {status}: not readable with this token")
+        # Git data endpoints answer 409 while a repository has no commits.
+        if "HTTP 409" in detail:
+            return Unavailable("HTTP 409: the repository is empty")
         raise
 
 
