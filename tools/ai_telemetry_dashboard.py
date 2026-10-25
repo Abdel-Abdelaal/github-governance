@@ -214,6 +214,11 @@ def build(repositories: list[str], output: Path) -> None:
         "rows": metrics(entries),
         "collection_errors": errors,
         "verified_records": len(entries),
+        "repositories_without_records": [
+            repository for repository in repositories
+            if not any(entry["record"]["identity"]["github_repository"] ==
+                       f"{OWNER}/{repository}" for entry in entries)
+        ],
         "outcomes": "not yet collected",
         "redteam": "not yet collected",
     }
@@ -241,9 +246,21 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repos", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--discover-public", action="store_true")
     args = parser.parse_args()
     spec = json.loads(args.repos.read_text(encoding="utf-8"))
-    build(list(spec["repos"]), args.output)
+    repositories = list(spec["repos"])
+    if args.discover_public:
+        # This endpoint lists public repositories; reject private metadata again
+        # defensively so a future API/client change cannot expose private names.
+        repositories = sorted({
+            item["name"] for item in pages(f"users/{OWNER}/repos")
+            if item.get("private") is False
+            and not item.get("fork") and not item.get("archived")
+            and isinstance(item.get("name"), str)
+            and re.fullmatch(r"[A-Za-z0-9_.-]+", item["name"])
+        })
+    build(repositories, args.output)
 
 
 if __name__ == "__main__":

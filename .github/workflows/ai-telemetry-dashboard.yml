@@ -38,7 +38,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           yq -o=json '.' repos.yaml > "$RUNNER_TEMP/repos.json"
-          python tools/ai_telemetry_dashboard.py --repos "$RUNNER_TEMP/repos.json" --output "$RUNNER_TEMP/ai-dashboard"
+          python tools/ai_telemetry_dashboard.py --repos "$RUNNER_TEMP/repos.json" --output "$RUNNER_TEMP/ai-dashboard" --discover-public
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         if: github.event_name != 'pull_request'
         with:

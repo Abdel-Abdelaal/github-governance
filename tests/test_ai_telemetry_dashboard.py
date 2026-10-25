@@ -43,6 +43,37 @@ def record(record_id="a", status="valid", usage=True):
 class MetricsTests(unittest.TestCase):
     """Unknown usage and skips do not masquerade as measured successes."""
 
+    def test_discovery_cannot_publish_private_or_unusable_repository_names(self):
+        items = [
+            {"name": "new-public", "private": False},
+            {"name": "confidential", "private": True},
+            {"name": "unknown-visibility"},
+            {"name": "fork", "private": False, "fork": True},
+            {"name": "archive", "private": False, "archived": True},
+            {"name": "../invalid", "private": False},
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            spec = Path(directory) / "repos.json"
+            spec.write_text('{"repos":{"old-public":{}}}')
+            with (
+                patch.object(sys, "argv", ["collector", "--repos", str(spec),
+                             "--output", directory, "--discover-public"]),
+                patch.object(dashboard, "pages", return_value=items) as pages,
+                patch.object(dashboard, "build") as build,
+            ):
+                dashboard.main()
+            pages.assert_called_once_with(f"users/{dashboard.OWNER}/repos")
+            self.assertEqual(build.call_args.args[0], ["new-public"])
+
+    def test_missing_records_remain_visible_without_inventing_success(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.object(dashboard, "collect", return_value=([], [])):
+                dashboard.build(["new-public"], Path(directory))
+            summary = json.loads((Path(directory) / "metrics.json").read_text())
+            self.assertEqual(summary["repositories_without_records"], ["new-public"])
+            self.assertEqual(summary["rows"], [])
+            self.assertEqual(summary["verified_records"], 0)
+
     def test_denominators_retries_publication_and_deduplication(self):
         """One success, one failure and one skip retain different denominators."""
         entries = [
