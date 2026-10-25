@@ -21,6 +21,10 @@ defaults:
   - security / Workflows
   - conformance / Conformance
 repos:
+  ello:
+    description: Android assistant application with shared security checks and measured AI review
+  youtube-knowledge-distillation:
+    description: Cited knowledge-distillation research kit with shared security and AI evidence
   .github:
     description: Engineering handbook and default community files for all my repos
   platform-workflows:

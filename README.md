@@ -14,7 +14,11 @@ Do not interpret a skipped credentials step as a successful plan or apply.
 
 ## How it works
 
-`repos.yaml` lists the managed repositories and defaults. `modules/repo` manages
+`repos.yaml` lists the public fleet repositories and desired defaults. Adding an
+existing repository requires importing its resources before a reviewed apply;
+an inventory entry does not prove that settings reconciliation is active.
+Private repositories and their confidential payloads stay outside this public
+inventory. `modules/repo` manages
 settings, labels, security features and the default-branch ruleset. The labels
 are fetched from a pinned revision of the shared handbook; update that revision
 through a PR when labels change. This makes plans reproducible.
