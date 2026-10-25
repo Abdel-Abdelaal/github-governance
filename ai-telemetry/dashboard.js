@@ -63,16 +63,18 @@ async function load() {
     data = await response.json();
     byId("updated").textContent = "Last collected " + new Date(data.generated_at).toLocaleString("en-GB", {timeZone: "UTC"}) + " UTC · signatures checked before aggregation";
     for (const [id, key] of [["repository", "repository"], ["mode", "mode"]]) {
-      for (const value of [...new Set(data.rows.map(row => row[key]))].sort()) {
+      const values = id === "repository" ? data.repositories.map(name => "Abdel-Abdelaal/" + name) : data.rows.map(row => row[key]);
+      for (const value of [...new Set(values)].sort()) {
         const option = document.createElement("option"); option.value = value; option.textContent = value;
         byId(id).append(option);
       }
       byId(id).addEventListener("change", render);
     }
     const gaps = sum(data.rows, "evidence_gaps") + sum(data.rows, "invalid_publication_receipts");
-    if (data.collection_errors.length || gaps) {
+    const missing = (data.repositories_without_records || []).length;
+    if (data.collection_errors.length || gaps || missing) {
       byId("notice").hidden = false;
-      byId("notice").textContent = data.collection_errors.length + " collection/signature errors · " + gaps + " execution evidence gaps. Coverage is incomplete; inspect metrics.json and the collection run.";
+      byId("notice").textContent = data.collection_errors.length + " collection/signature errors · " + gaps + " execution evidence gaps · " + missing + " public repositories awaiting signed records. Coverage is incomplete; inspect metrics.json and the collection run.";
     }
     render();
   } catch {

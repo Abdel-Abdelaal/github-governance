@@ -1,7 +1,12 @@
 # Public AI observatory
 
 The static dashboard is published by `ai-telemetry-dashboard.yml` every six hours
-and on demand. It reads the managed fleet from `repos.yaml`. Only public monthly
+and on demand. Hosted collection discovers every public non-fork, non-archived
+repository owned by this account, including future repositories. Offline/explicit
+collection can use `repos.yaml`. Private names are defensively excluded from
+discovery, and private payload collection is outside this public workflow.
+Repositories with no verified records remain selectable and are counted as
+awaiting evidence; an empty dataset is not a measured success. Only public monthly
 telemetry Release assets matching the record naming convention are considered.
 Release and asset endpoints are both paginated. Each record must verify against
 its Sigstore bundle, repository identity, the platform reusable signer workflow
@@ -32,6 +37,6 @@ restrictive Content Security Policy, accessible labels and mobile layouts.
 
 Run offline validation with `python -m unittest discover -s tests -v`.
 For collection, convert `repos.yaml` to JSON, then run
-`python tools/ai_telemetry_dashboard.py --repos repos.json --output SITE_DIRECTORY`.
+`python tools/ai_telemetry_dashboard.py --repos repos.json --output SITE_DIRECTORY --discover-public`.
 The GitHub CLI performs signature verification; its own token remains in the
 collector environment and is never sent to model processes or public downloads.
