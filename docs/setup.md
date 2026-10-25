@@ -5,13 +5,13 @@ Do not paste tokens or private key contents into chat or tracked files.
 
 ## 1. HCP Terraform
 
-1. Sign in at https://app.terraform.io and create the organization `abdel-abdelaal`
-   (if unavailable, update versions.tf through a PR to use the actual name).
+1. Sign in at <https://app.terraform.io> and create the organization `abdel-abdelaal`
+    (if unavailable, update versions.tf through a PR to use the actual name).
 2. Create workspace `github-governance`, choose CLI-driven workflow, and set
-   Settings → General → Execution Mode to **Local**. Actions runs Terraform;
-   HCP stores and locks state.
+    Settings → General → Execution Mode to **Local**. Actions runs Terraform;
+    HCP stores and locks state.
 3. User Settings → Tokens → Create an API token. Set it privately:
-   `gh secret set TF_API_TOKEN -R Abdel-Abdelaal/github-governance`.
+    `gh secret set TF_API_TOKEN -R Abdel-Abdelaal/github-governance`.
 
 ## 2. Governance GitHub App
 
@@ -54,7 +54,7 @@ declared setting and confirm the next plan closes the issue. Record links in REA
 ## What each step unlocks
 
 | Step | Unlocks | Until then |
-|---|---|---|
+| --- | --- | --- |
 | HCP Terraform + governance App | hosted plan on PRs, apply on merge, nightly drift issue, pending desired checks (`conformance / Conformance`, shortlink `Build, smoke and scan`) and new labels applied | Terraform workflow validates only; Fleet health lists the pending checks as "not applied" |
 | Governance App alone | complete monthly access review (secret ages, bypass actors, deploy keys) | those sections show "skipped" |
 | Automation App | baseline sync PRs, release-please release PRs, stale mutations, AI draft fix PRs | each of those steps skips with a notice |
@@ -100,7 +100,7 @@ An organisation would enforce this on every new repository automatically:
   installation step.
 
 | | Personal account (today) | Organisation |
-|---|---|---|
+| --- | --- | --- |
 | New repository protection | none until onboarded; Fleet health flags it within a day | from creation, by organisation ruleset |
 | CI on a new repository | none until the starter's callers are copied in | required workflows run on PRs; scheduled jobs (Scorecard, weekly security) still need callers |
 | Cost | free | organisation rulesets need a paid plan; required workflows need Enterprise Cloud |
