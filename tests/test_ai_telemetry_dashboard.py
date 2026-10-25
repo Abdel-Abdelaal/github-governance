@@ -68,6 +68,17 @@ class MetricsTests(unittest.TestCase):
         self.assertIsNone(row["mean_run_seconds"])
         self.assertEqual(row["usage_totals"], {})
 
+    def test_partial_publication_and_evidence_gaps_remain_visible(self):
+        """A posted summary counts even if a later check API call failed."""
+        value = record()
+        value["publication"][0]["status"] = "partially_published"
+        value["evidence_gap"] = True
+        value["invalid_publication_receipts"] = 1
+        row = dashboard.metrics([{"record": value}])[0]
+        self.assertEqual(row["findings_published"], 2)
+        self.assertEqual(row["evidence_gaps"], 1)
+        self.assertEqual(row["invalid_publication_receipts"], 1)
+
     def test_build_reports_collection_errors_and_empty_state(self):
         """Public collection failure is persisted beside the empty dataset."""
         with (

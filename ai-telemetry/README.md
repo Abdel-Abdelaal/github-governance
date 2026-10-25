@@ -22,6 +22,9 @@ skips. Latency sums all attempts per run. Token counts are sums of reported usag
 the dashboard shows how many runs supplied usage. Findings count as published only
 when a publisher receipt says so. Outcome quality, red-team rates and non-platform
 AI integrations remain explicitly unavailable until instrumented.
+Partial publication receipts count confirmed summary findings even if a later
+check API call failed. Damaged execution/publisher evidence is counted separately
+and produces a visible coverage warning.
 
 The dashboard has no external JavaScript dependencies. Model text is downloadable
 as data but never rendered as HTML. UI labels use DOM text content. The site has a

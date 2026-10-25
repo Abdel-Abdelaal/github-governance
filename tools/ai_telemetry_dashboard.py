@@ -170,13 +170,17 @@ def metrics(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 else None,
                 "usage_totals": dict(usage),
                 "runs_with_usage": sum(bool(r.get("usage_totals")) for r in attempted),
+                "evidence_gaps": sum(bool(r.get("evidence_gap")) for r in records),
+                "invalid_publication_receipts": sum(
+                    r.get("invalid_publication_receipts", 0) for r in records
+                ),
                 "findings_proposed": sum(
                     r.get("findings", {}).get("proposed", 0) for r in records
                 ),
                 "findings_published": sum(
                     p.get("findings_published", 0)
                     for p in receipts
-                    if p["status"] == "published"
+                    if p["status"] in {"published", "partially_published"}
                 ),
                 "patches": dict(patches),
                 "failure_categories": dict(failures),
