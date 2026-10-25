@@ -9,17 +9,17 @@ on:
 permissions: {}
 jobs:
   security:
-    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/security.yml@f06eb74320f169fa6ce3690b0cd44ccfba8f199b # v1.8.0
+    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/security.yml@0b7cd6a33abb89db1743c91d3f11cf98179ebcd2 # v1.9.0
     permissions:
       contents: read
       pull-requests: write
       security-events: write
     with:
-      languages: '["python","actions"]'
+      languages: auto
   report:
     needs: security
     if: failure() && github.event_name == 'schedule'
-    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/report-failure.yml@f06eb74320f169fa6ce3690b0cd44ccfba8f199b # v1.8.0
+    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/report-failure.yml@0b7cd6a33abb89db1743c91d3f11cf98179ebcd2 # v1.9.0
     permissions:
       issues: write
     with:
