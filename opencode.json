@@ -20,7 +20,7 @@
           "name": "MiMo 2.6 Flash",
           "limit": {
             "context": 1048576,
-            "output": 8192
+            "output": 32768
           }
         }
       }
