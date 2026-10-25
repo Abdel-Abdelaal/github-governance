@@ -69,9 +69,10 @@ async function load() {
       }
       byId(id).addEventListener("change", render);
     }
-    if (data.collection_errors.length) {
+    const gaps = sum(data.rows, "evidence_gaps") + sum(data.rows, "invalid_publication_receipts");
+    if (data.collection_errors.length || gaps) {
       byId("notice").hidden = false;
-      byId("notice").textContent = data.collection_errors.length + " collection or signature errors. Coverage is incomplete; inspect metrics.json and the collection run.";
+      byId("notice").textContent = data.collection_errors.length + " collection/signature errors · " + gaps + " execution evidence gaps. Coverage is incomplete; inspect metrics.json and the collection run.";
     }
     render();
   } catch {
