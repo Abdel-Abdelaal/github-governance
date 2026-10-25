@@ -1,7 +1,7 @@
 # AGENTS.md
 
 Terraform governance for the public repositories declared in repos.yaml. Follow
-https://github.com/Abdel-Abdelaal/.github/tree/main/standards.
+<https://github.com/Abdel-Abdelaal/.github/tree/main/standards>.
 
 ## Commands
 
@@ -21,7 +21,7 @@ AI can open PRs but cannot merge or apply infrastructure.
 ## Glossary
 
 | Name | Meaning |
-|---|---|
+| --- | --- |
 | desired state | settings declared in repos.yaml and Terraform |
 | drift | a difference between desired state and GitHub settings |
 | fleet | the repositories declared in repos.yaml |
