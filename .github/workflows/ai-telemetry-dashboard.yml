@@ -1,0 +1,72 @@
+name: AI telemetry dashboard
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ai-telemetry/**
+      - tools/ai_telemetry_dashboard.py
+      - tests/test_ai_telemetry_dashboard.py
+      - .github/workflows/ai-telemetry-dashboard.yml
+permissions: {}
+concurrency:
+  group: ai-telemetry-dashboard-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'publish' }}
+  cancel-in-progress: false
+jobs:
+  build:
+    name: Verify and aggregate AI records
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Validate aggregation and prepare static files
+        run: |
+          python -m unittest discover -s tests -p 'test_ai_telemetry_dashboard.py' -v
+          mkdir -p "$RUNNER_TEMP/ai-dashboard"
+          cp ai-telemetry/* "$RUNNER_TEMP/ai-dashboard/"
+      - name: Collect signed public release assets
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          yq -o=json '.' repos.yaml > "$RUNNER_TEMP/repos.json"
+          python tools/ai_telemetry_dashboard.py --repos "$RUNNER_TEMP/repos.json" --output "$RUNNER_TEMP/ai-dashboard"
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        if: github.event_name != 'pull_request'
+        with:
+          path: ${{ runner.temp }}/ai-dashboard
+  deploy:
+    name: Publish verified metrics
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+  report:
+    needs: [build, deploy]
+    if: failure() && github.event_name == 'schedule'
+    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/report-failure.yml@9963dc1ffc49cff752cc62f2ec9c1651bdb3f482 # v1.6.0
+    permissions:
+      issues: write
+    with:
+      title: AI telemetry dashboard collection failed
