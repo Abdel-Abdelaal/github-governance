@@ -16,12 +16,14 @@ function render() {
   const rows = data.rows.filter(row => (!byId("repository").value || row.repository === byId("repository").value) && (!byId("mode").value || row.mode === byId("mode").value));
   const attempted = sum(rows, "attempted_runs");
   const measured = sum(rows, "runs_with_usage");
+  const timed = sum(rows, "runs_with_attempts");
   byId("runs").textContent = number(sum(rows, "records"));
-  byId("coverage").textContent = number(attempted) + " attempted · " + number(sum(rows, "skipped")) + " skipped";
+  byId("coverage").textContent = number(attempted) + " analysis jobs · " + number(sum(rows, "skipped")) + " skipped";
   byId("success").textContent = attempted ? number(100 * sum(rows, "valid_runs") / attempted) + "%" : "—";
   byId("tokens").textContent = measured ? number(rows.reduce((total, row) => total + (tokenCount(row, "input") || 0) + (tokenCount(row, "output") || 0), 0)) : "—";
   byId("usage-coverage").textContent = number(measured) + " / " + number(attempted) + " runs reported usage";
-  byId("latency").textContent = attempted ? number(rows.reduce((total, row) => total + (row.mean_run_seconds || 0) * row.attempted_runs, 0) / attempted) + "s" : "—";
+  byId("latency").textContent = timed ? number(rows.reduce((total, row) => total + (row.mean_run_seconds || 0) * row.runs_with_attempts, 0) / timed) + "s" : "—";
+  byId("timing-coverage").textContent = number(timed) + " / " + number(attempted) + " jobs supplied attempt timings";
   byId("fleet").replaceChildren();
   byId("empty").hidden = rows.length !== 0;
   const failures = {};

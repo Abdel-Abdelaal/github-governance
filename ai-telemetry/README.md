@@ -23,7 +23,11 @@ not define dataset retention. Deletion of a source asset remains an availability
 risk. Signature verification detects modification, not deletion or AI correctness.
 
 Success means validated output divided by attempted runs, excluding credential
-skips. Latency sums all attempts per run. Token counts are sums of reported usage;
+skips. This is a pipeline output rate, including jobs with missing attempt evidence;
+it is not a model-accuracy score. Latency and attempts/run use only jobs with
+recorded attempts. Missing attempt evidence is counted separately and never becomes
+zero-duration timing. Latency sums all retries in each measured job.
+Token counts are sums of reported usage;
 the dashboard shows how many runs supplied usage. Findings count as published only
 when a publisher receipt says so. Outcome quality and non-platform
 AI integrations remain explicitly unavailable until instrumented.

@@ -66,6 +66,17 @@ jobs:
           python -m unittest discover -s tests -p 'test_ai*dashboard.py' -v
           mkdir -p "$RUNNER_TEMP/ai-dashboard"
           cp ai-telemetry/* "$RUNNER_TEMP/ai-dashboard/"
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          root = Path(os.environ["RUNNER_TEMP"]) / "ai-dashboard"
+          page = root / "index.html"
+          version = os.environ["GITHUB_SHA"]
+          text = page.read_text(encoding="utf-8")
+          for asset in ("dashboard.js", "style.css"):
+              text = text.replace(f'"{asset}"', f'"{asset}?v={version}"')
+          page.write_text(text, encoding="utf-8")
+          PY
       - name: Collect signed public release assets
         if: github.event_name != 'pull_request'
         env:
