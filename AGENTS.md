@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Terraform governance for only the four repositories in repos.yaml. Follow
+Terraform governance for the public repositories declared in repos.yaml. Follow
 https://github.com/Abdel-Abdelaal/.github/tree/main/standards.
 
 ## Commands
@@ -13,6 +13,8 @@ succeeded when credentials are missing. Never expose plan/state credentials.
 
 All settings changes use a PR. Keep prevent_destroy on repository resources.
 Never delete or recreate a managed repo. Do not disable protections for convenience.
+Existing repositories added to inventory need import before a reviewed apply.
+Never publish private repository identities or payloads in this public inventory.
 Pinned actions, least privilege, harden-runner first, timeout-minutes on every job.
 AI can open PRs but cannot merge or apply infrastructure.
 
