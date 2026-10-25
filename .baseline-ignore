@@ -1,0 +1,5 @@
+# Terraform tooling uses its existing dedicated validation workflow.
+# Python package toolchain adoption needs a separately validated change.
+ruff-base.toml
+pyrightconfig.base.json
+.pre-commit-config.yaml
