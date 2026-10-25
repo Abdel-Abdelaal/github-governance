@@ -103,7 +103,7 @@ These labels are not applied live yet: migrate the existing bootstrap state to
 HCP and configure the governance App before applying. Stale/release maintenance
 explicitly skips mutations until its canonical labels exist.
 
-Maintenance callers now pin platform v1.5.0 (`e26d5b07bdee2fc54ed5bd607d8041f7fbeaadaf`).
+Maintenance callers now pin platform v1.6.0 (`9963dc1ffc49cff752cc62f2ec9c1651bdb3f482`).
 Its corrected AI runtime awaits consumer audit verification. Frozen hook checks
 run where a hook configuration is supported; native Dependabot maintains baseline
 hook revisions. Stale/release mutations remain explicitly gated on canonical
