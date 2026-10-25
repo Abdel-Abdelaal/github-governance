@@ -116,9 +116,11 @@ def collect(repo: str, desired: list[str],
     if "workflow runs" in data:
         health.runs = latest_runs(data["workflow runs"]["workflow_runs"])
     if "governance issues" in data:
+        # The report's own tracking issue is not a finding about the fleet.
         health.governance_issues = [{"title": issue["title"], "url": issue["html_url"]}
                                     for issue in data["governance issues"]
-                                    if "pull_request" not in issue]
+                                    if "pull_request" not in issue
+                                    and issue["title"] != ISSUE_TITLE]
     if "pull requests" in data:
         pulls = data["pull requests"]
         health.open_prs = len(pulls)
