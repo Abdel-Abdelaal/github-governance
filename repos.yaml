@@ -19,6 +19,7 @@ defaults:
   - security / Dependency review
   - security / Secrets
   - security / Workflows
+  - conformance / Conformance
 repos:
   .github:
     description: Engineering handbook and default community files for all my repos
@@ -35,6 +36,7 @@ repos:
     - ci / Test
     - ci / Audit
     - security / CodeQL (python)
+    - conformance / Conformance
   shortlink:
     description: FastAPI URL shortener with enterprise-grade CI/CD, security scanning and AI review
     required_checks:
@@ -48,6 +50,8 @@ repos:
     - ci / Test
     - ci / Audit
     - security / CodeQL (python)
+    - conformance / Conformance
+    - Build, smoke and scan
   github-governance:
     description: All my GitHub repo settings, rulesets and labels as Terraform
     required_checks:
@@ -58,3 +62,4 @@ repos:
     - security / Workflows
     - Validate
     - security / CodeQL (python)
+    - conformance / Conformance
