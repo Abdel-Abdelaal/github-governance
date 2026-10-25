@@ -20,6 +20,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+import vulnerabilities as vulns
 from github_api import OWNER, Unavailable, api_or_unavailable, upsert_issue
 
 ISSUE_TITLE = "Dependency inventory"
@@ -169,8 +170,14 @@ def render(
     dependencies: Iterable[Dependency],
     upstreams: dict[tuple[str, str], Upstream],
     now: datetime,
+    vulnerabilities: list[vulns.Finding] | None = None,
+    vulnerability_note: str = "",
 ) -> str:
-    """Render the tracking issue body."""
+    """Render the tracking issue body.
+
+    `vulnerabilities` is None when the vulnerability sources could not be read;
+    `vulnerability_note` then says why, so silence is never mistaken for safety.
+    """
     by_key: dict[tuple[str, str], list[Dependency]] = defaultdict(list)
     for dependency in dependencies:
         by_key[(dependency.ecosystem, dependency.name)].append(dependency)
@@ -200,6 +207,7 @@ def render(
         if ecosystem == "docker" and "unpinned" in versions:
             attention.append(f"- Base image `{name}` is not digest-pinned in {repos}")
         rows[ecosystem].append(f"| `{name}` | {versions} | {repos} | {status} |")
+    attention += vulns.attention(vulnerabilities or [])
     lines = [
         "<!-- dependency-inventory -->",
         f"Generated {now:%Y-%m-%d %H:%M} UTC by the Dependency inventory workflow "
@@ -212,8 +220,25 @@ def render(
         f"{len(attention)}** need attention.",
         "",
         "## Needs attention",
-        *(attention or ["- Nothing archived, abandoned or unpinned."]),
+        *(attention or ["- Nothing archived, abandoned, unpinned or under attack."]),
     ]
+    checked = len(
+        {
+            (d.ecosystem, d.name, d.version)
+            for deps in by_key.values()
+            for d in deps
+            if d.ecosystem in vulns.OSV_ECOSYSTEMS
+        }
+    )
+    if vulnerabilities is None:
+        lines += [
+            "",
+            "## Known vulnerabilities",
+            "",
+            f"Not checked this run: {vulnerability_note}",
+        ]
+    else:
+        lines += vulns.render(vulnerabilities, checked)
     for ecosystem in sorted(rows):
         lines += [
             "",
@@ -272,6 +297,21 @@ def collect(
     return dependencies, upstreams
 
 
+def assess(
+    dependencies: list[Dependency], fetch: vulns.Fetch = vulns.fetch_json
+) -> tuple[list[vulns.Finding] | None, str]:
+    """Look up and rank vulnerabilities; report the reason instead of guessing."""
+    packages: dict[tuple[str, str, str], list[str]] = defaultdict(list)
+    for dependency in dependencies:
+        key = (dependency.ecosystem, dependency.name, dependency.version)
+        if dependency.repo not in packages[key]:
+            packages[key].append(dependency.repo)
+    try:
+        return vulns.enrich(vulns.affected(packages, fetch), fetch), ""
+    except (OSError, ValueError, KeyError) as error:
+        return None, f"a vulnerability source was unreachable ({type(error).__name__})"
+
+
 def main() -> None:
     """Build the inventory, or publish a built inventory."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -286,14 +326,18 @@ def main() -> None:
     if arguments.command == "build":
         spec = json.loads(arguments.repos.read_text(encoding="utf-8"))
         dependencies, upstreams = collect(list(spec["repos"]))
+        findings, note = assess(dependencies)
         now = datetime.now(UTC)
         arguments.output.write_text(
-            render(dependencies, upstreams, now), encoding="utf-8"
+            render(dependencies, upstreams, now, findings, note), encoding="utf-8"
         )
         record = {
             "generated_at": now.isoformat(),
             "dependencies": [asdict(dependency) for dependency in dependencies],
             "upstreams": {f"{e}:{n}": asdict(u) for (e, n), u in upstreams.items()},
+            "vulnerabilities": None
+            if findings is None
+            else [asdict(finding) for finding in findings],
         }
         arguments.json.write_text(json.dumps(record, indent=2), encoding="utf-8")
     else:
