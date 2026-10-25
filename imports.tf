@@ -90,3 +90,20 @@ import {
   to = module.repo["youtube-knowledge-distillation"].github_issue_labels.this
   id = "youtube-knowledge-distillation"
 }
+
+# agent-dispatcher was created from the fleet starter on 2026-10-25 and its
+# protect-main ruleset bootstrapped with the module's rules, like ello above.
+import {
+  to = module.repo["agent-dispatcher"].github_repository.this
+  id = "agent-dispatcher"
+}
+
+import {
+  to = module.repo["agent-dispatcher"].github_repository_ruleset.main
+  id = "agent-dispatcher:25836122"
+}
+
+import {
+  to = module.repo["agent-dispatcher"].github_issue_labels.this
+  id = "agent-dispatcher"
+}
