@@ -64,7 +64,7 @@ simultaneous mutations. HCP Terraform provides state locking and history.
 In an emergency the account owner can change GitHub settings directly. Record the
 reason, then reconcile desired state before the next apply. No bypass App is part
 of the ruleset. Solo repos require zero approvals because owners cannot approve
-their own PRs; a team would require 1–2 approvals and CODEOWNERS review.
+their own PRs; a team would require 1â€“2 approvals and CODEOWNERS review.
 
 ## Reports
 
@@ -103,7 +103,7 @@ These labels are not applied live yet: migrate the existing bootstrap state to
 HCP and configure the governance App before applying. Stale/release maintenance
 explicitly skips mutations until its canonical labels exist.
 
-Maintenance callers now pin platform v1.7.0 (`fac9ee28b0217a9d65e97a866bb87dfe1b92b0f2`).
+Maintenance callers now pin platform v1.7.0 (`40e5261e2e39d8d0c88e709c26385cab3cc43466`).
 Signed AI evidence and measured runs appear in the
 [public AI observatory](https://abdel-abdelaal.github.io/github-governance/). Frozen hook checks
 run where a hook configuration is supported; native Dependabot maintains baseline
