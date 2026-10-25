@@ -17,3 +17,6 @@
 - {"name": "duplicate", "color": "cfd3d7", "description": "Already exists"}
 - {"name": "wontfix", "color": "ffffff", "description": "Will not be worked on"}
 - {"name": "invalid", "color": "e4e669", "description": "Not a real issue"}
+- {"name": "stale", "color": "eeeeee", "description": "Inactive item awaiting a response before closure"}
+- {"name": "autorelease: pending", "color": "ededed", "description": "Reviewed release PR awaiting release publication"}
+- {"name": "autorelease: tagged", "color": "ededed", "description": "Release PR published and tagged"}

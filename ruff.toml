@@ -1,0 +1,6 @@
+extend = "ruff-base.toml"
+src = ["tools", "tests"]
+
+[lint.per-file-ignores]
+# Tests import the tools by path and assert with plain unittest methods.
+"tests/**" = ["D", "ANN", "PLR2004", "PT009", "PT027", "E402", "E501", "S101", "TRY003"]

@@ -37,6 +37,9 @@ Use Terraform 1.16.5 (or compatible 1.16.x), then:
 terraform fmt -check -recursive
 terraform init -backend=false
 terraform validate
+tflint --init && tflint --recursive      # Terraform linter, config in .tflint.hcl
+trivy config --severity HIGH,CRITICAL .  # misconfiguration scan
+ruff check . && python -m unittest discover -s tests
 # After owner setup, with GITHUB_TOKEN and TF_TOKEN_app_terraform_io in the shell:
 terraform init
 terraform plan -out=reviewed.tfplan
