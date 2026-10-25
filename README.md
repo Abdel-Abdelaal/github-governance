@@ -73,6 +73,7 @@ and never changes settings:
 
 | Workflow | When | Issue | Reads |
 |---|---|---|---|
+| [Dependency inventory](.github/workflows/dependency-inventory.yml) | Mondays 06:30 UTC | `Dependency inventory` | every pinned dependency in the fleet (GitHub's dependency graph for Actions, Python and npm, plus pre-commit hooks, Terraform providers and container images), each upstream project's archive status, last push and newest release; JSON copy kept 90 days as an artifact |
 | [Fleet health](.github/workflows/fleet-health.yml) | Mondays 06:45 UTC | `Fleet health` | live required checks vs `repos.yaml`, latest run of every workflow on `main`, open `governance` issues, open PRs, public OpenSSF Scorecard score |
 | [Access review](.github/workflows/access-review.yml) | 1st of the month 07:00 UTC | `Access review YYYY-MM` | collaborators, deploy keys, Actions secret ages (90-day rotation checkbox), ruleset bypass actors |
 
