@@ -1,5 +1,4 @@
-# Terraform tooling uses its existing dedicated validation workflow.
-# Python package toolchain adoption needs a separately validated change.
-ruff-base.toml
+# Terraform has its own validation workflow (fmt, validate, tflint, Trivy).
+# Pyright needs a Python project environment; these stdlib-only tools have none,
+# so Ruff and the unit tests in the Validate job cover them.
 pyrightconfig.base.json
-.pre-commit-config.yaml
