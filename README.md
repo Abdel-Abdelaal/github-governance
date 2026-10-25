@@ -61,7 +61,23 @@ simultaneous mutations. HCP Terraform provides state locking and history.
 In an emergency the account owner can change GitHub settings directly. Record the
 reason, then reconcile desired state before the next apply. No bypass App is part
 of the ruleset. Solo repos require zero approvals because owners cannot approve
-their own PRs; a team would require 1Ã¢â‚¬â€œ2 approvals and CODEOWNERS review.
+their own PRs; a team would require 1–2 approvals and CODEOWNERS review.
+
+## Reports
+
+Two scheduled workflows report on the whole fleet. Each keeps a single issue up to date
+and never changes settings:
+
+| Workflow | When | Issue | Reads |
+|---|---|---|---|
+| [Fleet health](.github/workflows/fleet-health.yml) | Mondays 06:45 UTC | `Fleet health` | live required checks vs `repos.yaml`, latest run of every workflow on `main`, open `governance` issues, open PRs, public OpenSSF Scorecard score |
+| [Access review](.github/workflows/access-review.yml) | 1st of the month 07:00 UTC | `Access review YYYY-MM` | collaborators, deploy keys, Actions secret ages (90-day rotation checkbox), ruleset bypass actors |
+
+Anything the token can't read is shown as `unreadable` or `skipped`, never as healthy.
+Until the governance App exists, the access review runs on the workflow token, so the
+admin-only sections are reported as skipped. A required check marked "not applied" is
+desired state waiting for a Terraform apply. Scheduled failures open
+`Governance workflow failed`.
 
 ## What this demonstrates
 
