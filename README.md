@@ -74,7 +74,7 @@ and never changes settings:
 | Workflow | When | Issue | Reads |
 |---|---|---|---|
 | [Dependency inventory](.github/workflows/dependency-inventory.yml) | Mondays 06:30 UTC | `Dependency inventory` | every pinned dependency in the fleet (GitHub's dependency graph for Actions, Python and npm, plus pre-commit hooks, Terraform providers and container images), each upstream project's archive status, last push and newest release; JSON copy kept 90 days as an artifact |
-| [Fleet health](.github/workflows/fleet-health.yml) | Daily 06:45 UTC | `Fleet health` | every public repository Abdel owns, listing any missing from `repos.yaml` as unmanaged; for managed ones, the required files and full-SHA platform-workflows callers, live required checks vs `repos.yaml`, latest run of every workflow on `main`, open `governance` issues, open PRs, public OpenSSF Scorecard score |
+| [Fleet health](.github/workflows/fleet-health.yml) | Daily 06:45 UTC | `Fleet health` | every public, non-fork, non-archived repository Abdel owns, listing any missing from `repos.yaml` as unmanaged; for managed ones, the required files and full-SHA platform-workflows callers, live required checks vs `repos.yaml`, latest run of every workflow on `main`, open `governance` issues, open PRs, public OpenSSF Scorecard score |
 | [Access review](.github/workflows/access-review.yml) | 1st of the month 07:00 UTC | `Access review YYYY-MM` | collaborators, deploy keys, Actions secret ages (90-day rotation checkbox), ruleset bypass actors |
 
 Anything the token can't read is shown as `unreadable` or `skipped`, never as healthy.

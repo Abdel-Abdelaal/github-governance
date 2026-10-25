@@ -304,9 +304,10 @@ def files_cell(health: RepoHealth) -> str:
         return "unreadable"
     if not health.missing_files and not health.missing_callers:
         return "complete"
+    files, callers = len(health.missing_files), len(health.missing_callers)
     return (
-        f"{len(health.missing_files)} files, "
-        f"{len(health.missing_callers)} callers missing"
+        f"missing {files} file{'' if files == 1 else 's'}, "
+        f"{callers} caller{'' if callers == 1 else 's'}"
     )
 
 

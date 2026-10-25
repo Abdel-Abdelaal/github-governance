@@ -193,7 +193,7 @@ class FleetReportTests(unittest.TestCase):
         self.assertEqual(health.missing_callers, ["security", "scorecard"])
         self.assertEqual(health.status, "attention")
         body = fleet_report.render([health], NOW)
-        self.assertIn("| one | attention | match | 1 files, 2 callers missing |", body)
+        self.assertIn("| one | attention | match | missing 1 file, 2 callers |", body)
         self.assertIn("- Required file missing: `AGENTS.md`", body)
         self.assertIn(
             "- No `security.yml` platform-workflows caller pinned by full SHA", body
@@ -209,6 +209,34 @@ class FleetReportTests(unittest.TestCase):
             fleet_report.missing_callers("platform-workflows", [local]), []
         )
         self.assertEqual(fleet_report.missing_callers("other", [local]), ["pr-title"])
+
+    def test_unreadable_workflow_file_is_not_counted_as_complete(self):
+        read = fake_reader(
+            {
+                "repos/Abdel-Abdelaal/one/git/trees/main": tree(
+                    ".github/workflows/ci.yml"
+                ),
+                "repos/Abdel-Abdelaal/one/contents/": Unavailable(
+                    "HTTP 403: not readable with this token"
+                ),
+                "repos/Abdel-Abdelaal/one/rules": [],
+                "repos/Abdel-Abdelaal/one/actions": {"workflow_runs": []},
+                "repos/Abdel-Abdelaal/one/issues": [],
+                "repos/Abdel-Abdelaal/one/pulls": [],
+                "repos/Abdel-Abdelaal/one": {"default_branch": "main"},
+            }
+        )
+        health = fleet_report.collect(
+            "one", [], read=read, scorecard=lambda _: "unavailable"
+        )
+        self.assertEqual(health.unreadable, ["workflows"])
+        self.assertEqual(health.missing_callers, [])
+        self.assertEqual(fleet_report.files_cell(health), "unreadable")
+        self.assertEqual(health.status, "incomplete")
+        self.assertIn(
+            "- Could not read workflows; it is not counted as healthy.",
+            fleet_report.render([health], NOW),
+        )
 
     def test_empty_repository_files_are_unreadable_not_complete(self):
         empty = Unavailable("HTTP 409: the repository is empty")
@@ -275,7 +303,14 @@ class FleetReportTests(unittest.TestCase):
         self.assertIn(
             "1 public repositories: 0 managed in `repos.yaml`, 1 unmanaged.", body
         )
-        self.assertIn("| ello | unmanaged | not in `repos.yaml` |", body)
+        self.assertIn(
+            "\n| ello | unmanaged | not in `repos.yaml` | not checked | not checked "
+            "| not checked | not checked | not checked |\n",
+            body,
+        )
+        header = next(line for line in body.splitlines() if line.startswith("| Repo"))
+        row = next(line for line in body.splitlines() if line.startswith("| ello"))
+        self.assertEqual(row.count("|"), header.count("|"))
         self.assertIn("standards/repo-structure.md#starting-a-new-repo", body)
 
     def test_unreadable_owner_fails_loudly(self):
@@ -359,6 +394,12 @@ class GitHubApiTests(unittest.TestCase):
             self.assertEqual(
                 github_api.api_or_unavailable("repos/x/y/git/trees/main"),
                 Unavailable("HTTP 409: the repository is empty"),
+            )
+        error = subprocess.CalledProcessError(1, "gh", stderr="gh: Conflict (HTTP 409)")
+        with patch.object(github_api, "gh", side_effect=error):
+            self.assertEqual(
+                github_api.api_or_unavailable("repos/x/y/merges"),
+                Unavailable("HTTP 409: conflict"),
             )
 
     def test_other_errors_still_fail(self):
