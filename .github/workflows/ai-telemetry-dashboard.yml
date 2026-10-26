@@ -84,7 +84,7 @@ jobs:
           REDTEAM_ARCHIVE_RESULT: ${{ needs.archive-redteam.result }}
         run: |
           yq -o=json '.' repos.yaml > "$RUNNER_TEMP/repos.json"
-          python tools/ai_telemetry_dashboard.py --repos "$RUNNER_TEMP/repos.json" --output "$RUNNER_TEMP/ai-dashboard" --discover-public --include-redteam
+          python tools/ai_telemetry_dashboard.py --repos "$RUNNER_TEMP/repos.json" --output "$RUNNER_TEMP/ai-dashboard" --discover-public --include-redteam --include-agents
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         if: github.event_name != 'pull_request'
         with:
