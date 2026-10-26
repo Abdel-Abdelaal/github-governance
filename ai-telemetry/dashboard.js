@@ -13,6 +13,7 @@ function cell(row, text) {
 }
 
 function render() {
+  renderAgents();
   const rows = data.rows.filter(row => (!byId("repository").value || row.repository === byId("repository").value) && (!byId("mode").value || row.mode === byId("mode").value));
   const attempted = sum(rows, "attempted_runs");
   const measured = sum(rows, "runs_with_usage");
@@ -55,6 +56,23 @@ function render() {
     const fill = document.createElement("div"); fill.className = "bar-fill";
     fill.style.width = (100 * count / ordered[0][1]) + "%";
     track.append(fill); row.append(label, track); byId("failures").append(row);
+  }
+}
+
+function renderAgents() {
+  const rows = (data.agents?.rows || []).filter(row => !byId("repository").value || row.repository === byId("repository").value);
+  byId("agent-rows").replaceChildren();
+  byId("agent-note").textContent = rows.length ? number(sum(rows, "records")) + " verified controller events in this selection. Unknown usage remains unknown." : "No verified controller events in this selection. Instrumentation and ingestion may still be pending.";
+  for (const item of rows) {
+    const row = document.createElement("tr");
+    cell(row, item.repository.split("/").pop() + " / " + item.stage);
+    cell(row, item.provider + " / " + ((item.models || []).join(", ") || "unknown model"));
+    cell(row, number(item.records));
+    cell(row, Object.entries(item.outcomes).map(([outcome, count]) => outcome + ": " + number(count)).join(" · "));
+    cell(row, ["input_tokens", "output_tokens"].map(key => item.usage_totals[key] === undefined ? "—" : number(item.usage_totals[key])).join(" / "));
+    cell(row, number(item.records_with_usage) + " / " + number(item.records));
+    cell(row, item.mean_seconds === null ? "—" : number(item.mean_seconds) + "s (" + number(item.records_with_timing) + " measured)");
+    byId("agent-rows").append(row);
   }
 }
 

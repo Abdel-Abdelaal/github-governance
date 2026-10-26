@@ -13,6 +13,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import ai_agent_dashboard
 import ai_redteam_dashboard
 from github_api import OWNER, api, gh
 
@@ -193,11 +194,16 @@ def metrics(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def build(
-    repositories: list[str], output: Path, *, include_redteam: bool = False
+    repositories: list[str],
+    output: Path,
+    *,
+    include_redteam: bool = False,
+    include_agents: bool = False,
 ) -> None:
     """Create a queryable dataset and metrics from verified records only."""
     entries: list[dict[str, Any]] = []
     errors: list[dict[str, str]] = []
+    agent_entries: list[dict[str, Any]] = []
     with tempfile.TemporaryDirectory(prefix="ai-metrics-") as directory:
         for repository in repositories:
             try:
@@ -209,6 +215,25 @@ def build(
                     {
                         "repository": repository,
                         "reason": "release collection unavailable",
+                    }
+                )
+        if include_agents:
+            try:
+                agent_entries, agent_errors = ai_agent_dashboard.collect(
+                    Path(directory), repositories
+                )
+                errors.extend(agent_errors)
+            except (
+                OSError,
+                ValueError,
+                TypeError,
+                KeyError,
+                subprocess.SubprocessError,
+            ):
+                errors.append(
+                    {
+                        "repository": "platform-workflows",
+                        "reason": "agent evidence collection unavailable",
                     }
                 )
     output.mkdir(parents=True, exist_ok=True)
@@ -257,12 +282,16 @@ def build(
         ],
         "outcomes": "not yet collected",
         "redteam": redteam,
+        "agents": ai_agent_dashboard.metrics(agent_entries),
     }
     (output / "metrics.json").write_text(
         json.dumps(summary, indent=2), encoding="utf-8"
     )
     (output / "records.jsonl").write_text(
         "".join(json.dumps(entry) + "\n" for entry in entries), encoding="utf-8"
+    )
+    (output / "agent-records.jsonl").write_text(
+        "".join(json.dumps(entry) + "\n" for entry in agent_entries), encoding="utf-8"
     )
     (output / "badge.json").write_text(
         json.dumps(
@@ -284,6 +313,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--discover-public", action="store_true")
     parser.add_argument("--include-redteam", action="store_true")
+    parser.add_argument("--include-agents", action="store_true")
     args = parser.parse_args()
     spec = json.loads(args.repos.read_text(encoding="utf-8"))
     repositories = list(spec["repos"])
@@ -301,7 +331,12 @@ def main() -> None:
                 and re.fullmatch(r"[A-Za-z0-9_.-]+", item["name"])
             }
         )
-    build(repositories, args.output, include_redteam=args.include_redteam)
+    build(
+        repositories,
+        args.output,
+        include_redteam=args.include_redteam,
+        include_agents=args.include_agents,
+    )
 
 
 if __name__ == "__main__":
