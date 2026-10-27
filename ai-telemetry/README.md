@@ -49,6 +49,11 @@ The dashboard has no external JavaScript dependencies. Model text is downloadabl
 as data but never rendered as HTML. UI labels use DOM text content. The site has a
 restrictive Content Security Policy, accessible labels and mobile layouts.
 
+Agent evidence includes the producer's `error` stage for controller interruptions
+such as cycle timeouts. These failures stay visible alongside neighbouring steps
+in the same verified batch. Unknown stages and invalid signatures still reject
+the batch; acceptance does not attest local execution or code quality.
+
 Run offline validation with `python -m unittest discover -s tests -v`.
 For collection, convert `repos.yaml` to JSON, then run
 `python tools/ai_telemetry_dashboard.py --repos repos.json --output SITE_DIRECTORY --discover-public`.

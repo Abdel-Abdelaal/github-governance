@@ -154,6 +154,29 @@ class AgentEvidenceTests(unittest.TestCase):
                 self.assertEqual(entries, [])
                 self.assertEqual(len(errors), 1)
 
+    def test_supervisor_error_and_neighbouring_steps_survive_batch_validation(self):
+        data = document(
+            [
+                record(stage="route", record_id="b" * 36),
+                record(
+                    stage="error",
+                    record_id="c" * 36,
+                    provider="controller",
+                    model=None,
+                    outcome="cycle_timeout",
+                    duration_ms=None,
+                ),
+            ]
+        )
+        records = agents.public_records(data, {"Abdel-Abdelaal/shortlink"})
+        self.assertEqual(len(records), 2)
+        summary = agents.metrics([{"record": item} for item in records])
+        self.assertEqual(summary["records"], 2)
+        failure = next(row for row in summary["rows"] if row["stage"] == "error")
+        self.assertEqual(failure["provider"], "controller")
+        self.assertEqual(failure["outcomes"], {"cycle_timeout": 1})
+        self.assertEqual(failure["records_with_usage"], 0)
+
     def test_unknown_usage_and_controller_events_stay_distinct_from_ci(self):
         summary = agents.metrics(
             [

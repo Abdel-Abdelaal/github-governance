@@ -31,6 +31,7 @@ STAGES = {
     "gate",
     "route",
     "publish",
+    "error",
 }
 
 
