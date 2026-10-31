@@ -41,17 +41,17 @@ def fake_reader(responses):
 SHA = "9963dc1ffc49cff752cc62f2ec9c1651bdb3f482"
 FULL_CALLERS = f"""
 jobs:
-  pr-title:
-    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/pr-title.yml@{SHA} # v1.6.0
-  security:
-    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/security.yml@{SHA}
-  conformance:
-    uses: 'Abdel-Abdelaal/platform-workflows/.github/workflows/conformance.yml@{SHA}'
-  review:
-    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/ai-review.yml@{SHA}
-  scorecard:
-    steps:
-      - uses: ossf/scorecard-action@2d1146689b8cda280b9bc96326124645441f03bc # v2.4.4
+    pr-title:
+        uses: Abdel-Abdelaal/platform-workflows/.github/workflows/pr-title.yml@{SHA} # v1.6.0
+    security:
+        uses: Abdel-Abdelaal/platform-workflows/.github/workflows/security.yml@{SHA}
+    conformance:
+        uses: 'Abdel-Abdelaal/platform-workflows/.github/workflows/conformance.yml@{SHA}'
+    review:
+        uses: Abdel-Abdelaal/platform-workflows/.github/workflows/ai-review.yml@{SHA}
+    scorecard:
+        steps:
+            - uses: ossf/scorecard-action@2d1146689b8cda280b9bc96326124645441f03bc # v2.4.4
 """
 REQUIRED_TREE = [{"path": path, "type": "blob"} for path in fleet_report.REQUIRED_FILES]
 
@@ -331,6 +331,32 @@ class FleetReportTests(unittest.TestCase):
             fleet_report.collect(
                 "one", [], read=read, scorecard=lambda _: "unavailable"
             )
+
+    def test_unreadable_repository_keeps_the_rest_of_the_fleet(self):
+        def fake(repo, _desired):
+            if repo == "two":
+                raise fleet_report.UnreadableRepositoryError(
+                    repo, Unavailable("HTTP 404: not readable with this token")
+                )
+            return fleet_report.RepoHealth(repo, missing_files=["README.md"])
+
+        with patch.object(fleet_report, "collect", fake):
+            healths = fleet_report.collect_fleet(SPEC)
+        self.assertEqual([health.name for health in healths], ["one", "two", "three"])
+        self.assertEqual(healths[1].unreadable, ["repository"])
+        self.assertEqual(healths[1].status, "incomplete")
+        body = fleet_report.render(healths, NOW)
+        self.assertIn(
+            "| two | incomplete | unreadable | unreadable | unreadable | unreadable "
+            "| unreadable | unavailable |",
+            body,
+        )
+        self.assertIn(
+            "- Could not read repository; it is not counted as healthy.", body
+        )
+        self.assertIn(
+            "3 public repositories: 3 managed in `repos.yaml`, 0 unmanaged.", body
+        )
 
 
 class AccessReviewTests(unittest.TestCase):

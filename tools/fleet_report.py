@@ -241,6 +241,21 @@ def check_files(
     health.missing_callers = missing_callers(health.name, workflows)
 
 
+def collect_fleet(spec: dict[str, Any]) -> list[RepoHealth]:
+    """Collect one health row per managed repository in the spec.
+
+    A repository that cannot be read at all is reported as unreadable
+    instead of aborting the report; other errors still propagate.
+    """
+    healths: list[RepoHealth] = []
+    for repo, checks in desired_checks(spec).items():
+        try:
+            healths.append(collect(repo, checks))
+        except UnreadableRepositoryError:
+            healths.append(RepoHealth(repo, unreadable=["repository"]))
+    return healths
+
+
 def collect(
     repo: str,
     desired: list[str],
@@ -295,12 +310,14 @@ def collect(
 
 def cell(health: RepoHealth, section: str, value: object) -> str:
     """Show a value only when its section was actually read."""
-    return "unreadable" if section in health.unreadable else str(value)
+    if "repository" in health.unreadable or section in health.unreadable:
+        return "unreadable"
+    return str(value)
 
 
 def files_cell(health: RepoHealth) -> str:
     """Summarise required files and callers, when both were read."""
-    if {"files", "workflows"} & set(health.unreadable):
+    if {"repository", "files", "workflows"} & set(health.unreadable):
         return "unreadable"
     if not health.missing_files and not health.missing_callers:
         return "complete"
@@ -425,9 +442,7 @@ def main() -> None:
     arguments = parser.parse_args()
     if arguments.command == "build":
         spec = json.loads(arguments.repos.read_text(encoding="utf-8"))
-        healths = [
-            collect(repo, checks) for repo, checks in desired_checks(spec).items()
-        ]
+        healths = collect_fleet(spec)
         unmanaged = unmanaged_repos(owned_public_repos(), set(spec["repos"]))
         arguments.output.write_text(
             render(healths, datetime.now(UTC), unmanaged), encoding="utf-8"
