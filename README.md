@@ -28,9 +28,10 @@ flowchart LR
   Spec[repos.yaml + shared labels] --> Plan[Terraform plan]
   Plan --> Review[Protected pull request]
   Review --> Apply[Apply on main]
-  Live[GitHub settings] --> Drift[Nightly plan]
-  Drift --> Issue[Drift detected issue]
+  Live[GitHub settings] -.-> Drift[Nightly plan]
+  Drift -.-> Issue[Drift detected issue]
   Apply --> Live
+  Note["Dashed = target state; nightly drift issue runs only after owner setup (docs/setup.md)"]
 ```
 
 ## Commands
@@ -61,9 +62,12 @@ pass. Imports adopt existing repos and rulesets without replacing them. First
 apply must be inspected for unexpected deletes or replacements. A second plan
 must return exit code 0 before calling bootstrap complete.
 
-Nightly exit code 2 opens/updates `Drift detected`; exit code 0 closes it. Errors
-also open an issue and fail the run. All runs share a concurrency lock to prevent
-simultaneous mutations. HCP Terraform provides state locking and history.
+After the owner setup in [docs/setup.md](docs/setup.md) is verified, nightly exit
+code 2 opens/updates `Drift detected` and exit code 0 closes it. Until then the
+scheduled run prints "Owner setup pending: no plan, apply or drift check was
+performed" (`.github/workflows/terraform.yml`) and opens or closes no drift issue.
+Errors also open an issue and fail the run. All runs share a concurrency lock to
+prevent simultaneous mutations. HCP Terraform provides state locking and history.
 
 In an emergency the account owner can change GitHub settings directly. Record the
 reason, then reconcile desired state before the next apply. No bypass App is part
