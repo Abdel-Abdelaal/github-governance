@@ -60,7 +60,7 @@ jobs:
     if: >-
       github.event_name != 'pull_request' ||
       (github.event.pull_request.head.repo.full_name == github.repository &&
-       github.actor == github.repository_owner)
+      github.actor == github.repository_owner)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -90,7 +90,7 @@ jobs:
         if: steps.setup.outputs.ready == 'true'
         with:
           persist-credentials: false
-      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         if: steps.setup.outputs.ready == 'true'
         id: app
         with:
@@ -135,7 +135,7 @@ jobs:
           steps.setup.outputs.ready == 'true' &&
           github.ref == 'refs/heads/main' &&
           (github.event_name == 'push' ||
-           (github.event_name == 'workflow_dispatch' && inputs.apply))
+          (github.event_name == 'workflow_dispatch' && inputs.apply))
         env:
           GITHUB_TOKEN: ${{ steps.app.outputs.token }}
         run: terraform apply -input=false -auto-approve reviewed.tfplan
