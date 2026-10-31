@@ -60,7 +60,7 @@ jobs:
     if: >-
       github.event_name != 'pull_request' ||
       (github.event.pull_request.head.repo.full_name == github.repository &&
-       github.actor == github.repository_owner)
+      github.actor == github.repository_owner)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -135,7 +135,7 @@ jobs:
           steps.setup.outputs.ready == 'true' &&
           github.ref == 'refs/heads/main' &&
           (github.event_name == 'push' ||
-           (github.event_name == 'workflow_dispatch' && inputs.apply))
+          (github.event_name == 'workflow_dispatch' && inputs.apply))
         env:
           GITHUB_TOKEN: ${{ steps.app.outputs.token }}
         run: terraform apply -input=false -auto-approve reviewed.tfplan
