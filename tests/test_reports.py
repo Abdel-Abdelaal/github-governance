@@ -333,7 +333,7 @@ class FleetReportTests(unittest.TestCase):
             )
 
     def test_unreadable_repository_keeps_the_rest_of_the_fleet(self):
-        def fake(repo, desired):
+        def fake(repo, _desired):
             if repo == "two":
                 raise fleet_report.UnreadableRepositoryError(
                     repo, Unavailable("HTTP 404: not readable with this token")
