@@ -41,17 +41,17 @@ def fake_reader(responses):
 SHA = "9963dc1ffc49cff752cc62f2ec9c1651bdb3f482"
 FULL_CALLERS = f"""
 jobs:
-  pr-title:
-    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/pr-title.yml@{SHA} # v1.6.0
-  security:
-    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/security.yml@{SHA}
-  conformance:
-    uses: 'Abdel-Abdelaal/platform-workflows/.github/workflows/conformance.yml@{SHA}'
-  review:
-    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/ai-review.yml@{SHA}
-  scorecard:
-    steps:
-      - uses: ossf/scorecard-action@2d1146689b8cda280b9bc96326124645441f03bc # v2.4.4
+    pr-title:
+        uses: Abdel-Abdelaal/platform-workflows/.github/workflows/pr-title.yml@{SHA} # v1.6.0
+    security:
+        uses: Abdel-Abdelaal/platform-workflows/.github/workflows/security.yml@{SHA}
+    conformance:
+        uses: 'Abdel-Abdelaal/platform-workflows/.github/workflows/conformance.yml@{SHA}'
+    review:
+        uses: Abdel-Abdelaal/platform-workflows/.github/workflows/ai-review.yml@{SHA}
+    scorecard:
+        steps:
+            - uses: ossf/scorecard-action@2d1146689b8cda280b9bc96326124645441f03bc # v2.4.4
 """
 REQUIRED_TREE = [{"path": path, "type": "blob"} for path in fleet_report.REQUIRED_FILES]
 
