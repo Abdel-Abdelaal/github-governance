@@ -70,8 +70,18 @@ Errors also open an issue and fail the run. All runs share a concurrency lock to
 prevent simultaneous mutations. HCP Terraform provides state locking and history.
 
 In an emergency the account owner can change GitHub settings directly. Record the
-reason, then reconcile desired state before the next apply. No bypass App is part
-of the ruleset. Solo repos require zero approvals because owners cannot approve
+reason, then reconcile desired state before the next apply. Desired state
+declares no bypass actors: the `protect-main` ruleset in `modules/repo/main.tf`
+omits `bypass_actors`, so no App or user bypass is
+configured there. The adopted rulesets were verified the same way: the
+bootstrap plan was inspected for "no bypass actors" (see
+[ADR 0003](docs/decisions/0003-bootstrap-required-checks.md)), and the ello,
+youtube-knowledge-distillation and agent-dispatcher rulesets were created from
+the module's exact rules (`imports.tf`). A bypass actor added outside
+Terraform, for example by an emergency direct change, is caught by the monthly
+Access review (Reports table), which reads each ruleset's bypass actors and
+requires any actor found to be justified or removed.
+Solo repos require zero approvals because owners cannot approve
 their own PRs; a team would require 1â€“2 approvals and CODEOWNERS review.
 
 ## Reports
