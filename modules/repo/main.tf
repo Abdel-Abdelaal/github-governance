@@ -31,6 +31,8 @@ resource "github_repository" "this" {
 }
 
 resource "github_repository_ruleset" "main" {
+  # Omitting bypass_actors is intentional: desired state has no bypass actors,
+  # and the monthly access review reports any bypass actor added live.
   name        = "protect-main"
   repository  = github_repository.this.name
   target      = "branch"
