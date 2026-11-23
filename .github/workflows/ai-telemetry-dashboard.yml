@@ -25,7 +25,7 @@ jobs:
       contents: write
       actions: read
     steps:
-      - uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
+      - uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
         with:
           egress-policy: audit
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -55,7 +55,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
+      - uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
         with:
           egress-policy: audit
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -102,7 +102,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
+      - uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
         with:
           egress-policy: audit
       - name: Deploy GitHub Pages
@@ -111,7 +111,7 @@ jobs:
   report:
     needs: [archive-redteam, build, deploy]
     if: failure() && github.event_name == 'schedule'
-    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/report-failure.yml@aa42de723a82473499d8744c37ed4e571c868354 # v1.12.0
+    uses: Abdel-Abdelaal/platform-workflows/.github/workflows/report-failure.yml@2b86e583c1c8556eaf08816f39f52bbb724d5b65 # v1.12.1
     permissions:
       issues: write
     with:
